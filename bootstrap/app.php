@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             \App\Http\Middleware\InstallerCheck::class,
+            \App\Http\Middleware\MaintenanceMode::class,
+            \App\Http\Middleware\TrackVisit::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

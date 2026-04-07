@@ -157,6 +157,14 @@ Route::prefix('cliente')->name('client.')->group(function () {
             Route::get('/{order}',   [Client\OrderController::class, 'show'])->name('show');
         });
 
+        // Afiliados
+        Route::prefix('afiliados')->name('affiliates.')->group(function () {
+            Route::get('/',                [Client\AffiliateController::class, 'index'])->name('index');
+            Route::post('/inscrever',      [Client\AffiliateController::class, 'enroll'])->name('enroll');
+            Route::post('/saque',          [Client\AffiliateController::class, 'requestPayout'])->name('payout');
+            Route::put('/dados-pagamento', [Client\AffiliateController::class, 'updatePaymentInfo'])->name('payment.info');
+        });
+
         // Perfil
         Route::prefix('perfil')->name('profile.')->group(function () {
             Route::get('/',                [Client\ProfileController::class, 'show'])->name('show');
@@ -373,6 +381,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::put('/{gateway}/configurar', [\App\Http\Controllers\Admin\GatewayController::class, 'configureSave'])->name('configure.save');
             Route::post('/{gateway}/testar',    [\App\Http\Controllers\Admin\GatewayController::class, 'test'])->name('test');
             Route::post('/reembolso/{transaction}', [\App\Http\Controllers\Admin\GatewayController::class, 'refund'])->name('refund');
+        });
+
+        // Afiliados
+        Route::prefix('afiliados')->name('affiliates.')->group(function () {
+            Route::get('/',                          [Admin\AffiliateController::class, 'index'])->name('index');
+            Route::get('/stats',                     [Admin\AffiliateController::class, 'stats'])->name('stats');
+            Route::get('/comissoes',                 [Admin\AffiliateController::class, 'commissions'])->name('commissions');
+            Route::post('/comissoes/{commission}/aprovar', [Admin\AffiliateController::class, 'approveCommission'])->name('commissions.approve');
+            Route::post('/comissoes/{commission}/rejeitar',[Admin\AffiliateController::class, 'rejectCommission'])->name('commissions.reject');
+            Route::get('/saques',                    [Admin\AffiliateController::class, 'payouts'])->name('payouts');
+            Route::post('/saques/{payout}/processar',[Admin\AffiliateController::class, 'processPayout'])->name('payouts.process');
+            Route::put('/{affiliate}',               [Admin\AffiliateController::class, 'updateAffiliate'])->name('update');
         });
 
         // WhatsApp (Evolution API) — teste de conexão

@@ -99,6 +99,11 @@
                 <i class="bi bi-cart3 w-5 text-center"></i> Contratar
             </a>
 
+            <a href="{{ route('client.affiliates.index') }}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium {{ request()->routeIs('client.affiliates.*') ? 'bg-primary-600 text-white' : 'text-slate-300 hover:bg-slate-700' }}">
+                <i class="bi bi-people w-5 text-center"></i> Afiliados
+            </a>
+
             <div class="pt-3 pb-1 px-3">
                 <span class="text-slate-500 text-xs font-semibold uppercase tracking-wider">Conta</span>
             </div>
@@ -214,6 +219,15 @@ window.HostPanel = {
         setTimeout(() => el.remove(), 4000);
     }
 };
+</script>
+{{-- Back to Top --}}
+<button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})"
+    class="fixed bottom-6 right-6 z-50 bg-primary-600 hover:bg-primary-700 text-white w-10 h-10 rounded-full shadow-lg hidden items-center justify-center transition"
+    style="display:none">
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+</button>
+<script>
+window.addEventListener('scroll',()=>{const b=document.getElementById('backToTop');b.style.display=window.scrollY>300?'flex':'none'});
 </script>
 @stack('scripts')
 </body>

@@ -71,6 +71,12 @@
             <li class="nav-item"><a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="bi bi-list"></i></a></li>
         </ul>
         <ul class="navbar-nav ms-auto">
+            {{-- Voltar ao Site --}}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('home') }}" target="_blank" title="Voltar ao site">
+                    <i class="bi bi-box-arrow-up-right"></i> <span class="d-none d-md-inline">Ver Site</span>
+                </a>
+            </li>
             {{-- Notificações rápidas --}}
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('admin.tickets.index') }}" title="Tickets abertos">
@@ -225,6 +231,21 @@
                         </ul>
                     </li>
 
+                    {{-- ═══════ Marketing ═══════ --}}
+                    <li class="nav-item {{ request()->routeIs('admin.affiliates.*') ? 'menu-open' : '' }}">
+                        <a href="#" class="nav-link {{ request()->routeIs('admin.affiliates.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-megaphone"></i>
+                            <p>Marketing<i class="bi bi-chevron-left right"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.affiliates.index') }}" class="nav-link {{ request()->routeIs('admin.affiliates.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Afiliados</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
                     {{-- ═══════ Conteúdo ═══════ --}}
                     <li class="nav-item {{ request()->routeIs('admin.cms.*','admin.notifications.*') ? 'menu-open' : '' }}">
                         <a href="#" class="nav-link {{ request()->routeIs('admin.cms.*','admin.notifications.*') ? 'active' : '' }}">
@@ -358,6 +379,15 @@
             setTimeout(() => toast.remove(), 4000);
         }
     };
+</script>
+{{-- Back to Top --}}
+<button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})"
+    class="btn btn-primary position-fixed shadow-lg"
+    style="bottom:2rem;right:2rem;z-index:1050;display:none;width:42px;height:42px;border-radius:50%;padding:0">
+    <i class="bi bi-arrow-up"></i>
+</button>
+<script>
+window.addEventListener('scroll',()=>{document.getElementById('backToTop').style.display=window.scrollY>300?'block':'none'});
 </script>
 @stack('scripts')
 </body>

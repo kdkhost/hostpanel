@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\LoginLog;
+use App\Services\AffiliateService;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -120,6 +121,9 @@ class ClientAuthController extends Controller
 
         Auth::guard('client')->login($client);
         app(NotificationService::class)->send($client, 'welcome', ['name' => $client->name]);
+
+        // Link affiliate referral if present
+        app(AffiliateService::class)->linkReferral($client);
 
         return response()->json(['redirect' => route('client.dashboard')]);
     }

@@ -62,6 +62,21 @@ class SettingSeeder extends Seeder
             ['group' => 'appearance', 'key' => 'active_theme',      'value' => 'default', 'type' => 'string',  'label' => 'Tema Ativo',           'description' => 'Nome da pasta do tema em resources/themes/'],
             ['group' => 'appearance', 'key' => 'company_logo',       'value' => '',        'type' => 'string',  'label' => 'Logo da Empresa (URL)', 'description' => 'URL da imagem de logo exibida no cabeçalho público'],
             ['group' => 'appearance', 'key' => 'company_logo_dark',  'value' => '',        'type' => 'string',  'label' => 'Logo Dark (URL)',       'description' => 'Logo versão clara para fundos escuros'],
+
+            // Manutenção
+            ['group' => 'maintenance', 'key' => 'maintenance.enabled',     'value' => '0',  'type' => 'boolean', 'label' => 'Modo Manutenção',       'description' => 'Ativar página de manutenção para visitantes'],
+            ['group' => 'maintenance', 'key' => 'maintenance.message',     'value' => 'Estamos realizando melhorias no sistema. Voltaremos em breve!', 'type' => 'string', 'label' => 'Mensagem de Manutenção'],
+            ['group' => 'maintenance', 'key' => 'maintenance.allowed_ips', 'value' => '',   'type' => 'textarea', 'label' => 'IPs Liberados',         'description' => 'Um IP por linha que pode acessar durante manutenção'],
+            ['group' => 'maintenance', 'key' => 'maintenance.secret',      'value' => '',   'type' => 'string',  'label' => 'Token de Bypass',        'description' => 'Adicione ?bypass=TOKEN na URL para liberar acesso'],
+
+            // Afiliados
+            ['group' => 'affiliate', 'key' => 'affiliate.enabled',            'value' => '1',          'type' => 'boolean', 'label' => 'Sistema de Afiliados',    'description' => 'Ativar programa de afiliados'],
+            ['group' => 'affiliate', 'key' => 'affiliate.commission_rate',     'value' => '10',         'type' => 'decimal', 'label' => 'Taxa de Comissão Padrão', 'description' => 'Percentual ou valor fixo de comissão padrão'],
+            ['group' => 'affiliate', 'key' => 'affiliate.commission_type',     'value' => 'percentage', 'type' => 'string',  'label' => 'Tipo de Comissão',       'description' => 'percentage ou fixed'],
+            ['group' => 'affiliate', 'key' => 'affiliate.min_payout',          'value' => '50',         'type' => 'decimal', 'label' => 'Saque Mínimo (R$)',      'description' => 'Valor mínimo para solicitar saque'],
+            ['group' => 'affiliate', 'key' => 'affiliate.min_commission',      'value' => '1',          'type' => 'decimal', 'label' => 'Comissão Mínima (R$)',   'description' => 'Valor mínimo de comissão por fatura'],
+            ['group' => 'affiliate', 'key' => 'affiliate.auto_approve',        'value' => '0',          'type' => 'boolean', 'label' => 'Auto-aprovar Comissões', 'description' => 'Se ativo, comissões são creditadas automaticamente'],
+            ['group' => 'affiliate', 'key' => 'affiliate.only_first_invoice',  'value' => '0',          'type' => 'boolean', 'label' => 'Apenas Primeira Fatura', 'description' => 'Gerar comissão apenas na primeira compra do indicado'],
         ];
 
         foreach ($settings as $s) {

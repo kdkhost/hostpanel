@@ -8,12 +8,18 @@ use App\Models\Announcement;
 use App\Models\KnowledgeBase;
 use App\Models\Page;
 use App\Models\Setting;
+use App\Services\AffiliateService;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        // Track affiliate referral
+        if ($ref = $request->query('ref')) {
+            app(AffiliateService::class)->trackVisit($ref, $request->ip(), $request->fullUrl());
+        }
+
         $groups = ProductGroup::with(['products' => fn($q) =>
             $q->where('active', true)->where('hidden', false)->where('featured', true)
               ->with(['pricing' => fn($p) => $p->where('active', true)->orderBy('price')])

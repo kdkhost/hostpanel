@@ -33,6 +33,23 @@
         .table th { font-weight: 600; font-size: .8125rem; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; }
         .stats-card { border-left: 4px solid var(--hp-primary); }
         #impersonation-banner { background: #f59e0b; color: #000; padding: .5rem 1rem; font-weight: 600; text-align: center; position: sticky; top: 0; z-index: 9999; }
+        /* AdminLTE treeview arrow fix for Bootstrap Icons */
+        .nav-sidebar .nav-link p .right {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            transition: transform .3s;
+            font-size: .7rem;
+        }
+        .nav-item.menu-open > .nav-link p .right {
+            transform: translateY(-50%) rotate(-90deg);
+        }
+        .nav-treeview { padding-left: .5rem; }
+        .nav-treeview .nav-link { padding: .4rem 1rem .4rem 1.5rem; font-size: .875rem; }
+        .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link.active { background: rgba(255,255,255,.1); color: #fff; }
+        .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link { color: rgba(255,255,255,.7); }
+        .sidebar-dark-primary .nav-treeview > .nav-item > .nav-link:hover { color: #fff; background: rgba(255,255,255,.05); }
     </style>
     @stack('styles')
 </head>
@@ -94,137 +111,184 @@
             </div>
 
             <nav class="mt-2">
-                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
 
+                    {{-- Dashboard --}}
                     <li class="nav-item">
                         <a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                             <i class="nav-icon bi bi-speedometer2"></i><p>Dashboard</p>
                         </a>
                     </li>
 
-                    <li class="nav-header">CLIENTES & SERVIÇOS</li>
-
-                    <li class="nav-item">
-                        <a href="{{ route('admin.clients.index') }}" class="nav-link {{ request()->routeIs('admin.clients.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-people"></i><p>Clientes</p>
+                    {{-- ═══════ Clientes & Serviços ═══════ --}}
+                    <li class="nav-item {{ request()->routeIs('admin.clients.*','admin.services.*','admin.orders.*','admin.domains.*') ? 'menu-open' : '' }}">
+                        <a href="#" class="nav-link {{ request()->routeIs('admin.clients.*','admin.services.*','admin.orders.*','admin.domains.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-people"></i>
+                            <p>Clientes & Serviços<i class="bi bi-chevron-left right"></i></p>
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.services.index') }}" class="nav-link {{ request()->routeIs('admin.services.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-hdd-stack"></i><p>Serviços</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ Route::has('admin.orders.index') ? route('admin.orders.index') : '#' }}" class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-cart3"></i><p>Pedidos</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.domains.index') }}" class="nav-link {{ request()->routeIs('admin.domains.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-globe"></i><p>Domínios</p>
-                        </a>
-                    </li>
-
-                    <li class="nav-header">FINANCEIRO</li>
-
-                    <li class="nav-item">
-                        <a href="{{ route('admin.invoices.index') }}" class="nav-link {{ request()->routeIs('admin.invoices.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-receipt"></i><p>Faturas</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.gateways.index') }}" class="nav-link {{ request()->routeIs('admin.gateways.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-credit-card"></i><p>Gateways</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.coupons.index') }}" class="nav-link {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-tag"></i><p>Cupons</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.reports.revenue') }}" class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-bar-chart"></i><p>Relatórios</p>
-                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.clients.index') }}" class="nav-link {{ request()->routeIs('admin.clients.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Clientes</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.services.index') }}" class="nav-link {{ request()->routeIs('admin.services.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Serviços</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ Route::has('admin.orders.index') ? route('admin.orders.index') : '#' }}" class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Pedidos</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.domains.index') }}" class="nav-link {{ request()->routeIs('admin.domains.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Domínios</p>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
 
-                    <li class="nav-header">SUPORTE</li>
+                    {{-- ═══════ Financeiro ═══════ --}}
+                    <li class="nav-item {{ request()->routeIs('admin.invoices.*','admin.gateways.*','admin.coupons.*','admin.reports.*') ? 'menu-open' : '' }}">
+                        <a href="#" class="nav-link {{ request()->routeIs('admin.invoices.*','admin.gateways.*','admin.coupons.*','admin.reports.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-wallet2"></i>
+                            <p>Financeiro<i class="bi bi-chevron-left right"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.invoices.index') }}" class="nav-link {{ request()->routeIs('admin.invoices.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Faturas</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.gateways.index') }}" class="nav-link {{ request()->routeIs('admin.gateways.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Gateways</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.coupons.index') }}" class="nav-link {{ request()->routeIs('admin.coupons.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Cupons</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.reports.revenue') }}" class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Relatórios</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
 
-                    <li class="nav-item">
-                        <a href="{{ route('admin.tickets.index') }}" class="nav-link {{ request()->routeIs('admin.tickets.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-headset"></i><p>Tickets</p>
+                    {{-- ═══════ Suporte ═══════ --}}
+                    <li class="nav-item {{ request()->routeIs('admin.tickets.*','admin.kanban.*') ? 'menu-open' : '' }}">
+                        <a href="#" class="nav-link {{ request()->routeIs('admin.tickets.*','admin.kanban.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-headset"></i>
+                            <p>Suporte<i class="bi bi-chevron-left right"></i></p>
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.kanban.board', 'tickets') }}" class="nav-link {{ request()->routeIs('admin.kanban.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-kanban"></i><p>Kanban</p>
-                        </a>
-                    </li>
-
-                    <li class="nav-header">INFRAESTRUTURA</li>
-
-                    <li class="nav-item">
-                        <a href="{{ route('admin.servers.index') }}" class="nav-link {{ request()->routeIs('admin.servers.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-server"></i><p>Servidores</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('status.index') }}" target="_blank" class="nav-link">
-                            <i class="nav-icon bi bi-broadcast"></i><p>Status da Rede <i class="bi bi-box-arrow-up-right ms-1" style="font-size:.65rem"></i></p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.products.index') }}" class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-box-seam"></i><p>Produtos</p>
-                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.tickets.index') }}" class="nav-link {{ request()->routeIs('admin.tickets.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Tickets</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.kanban.board', 'tickets') }}" class="nav-link {{ request()->routeIs('admin.kanban.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Kanban</p>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
 
-                    <li class="nav-header">SISTEMA</li>
+                    {{-- ═══════ Infraestrutura ═══════ --}}
+                    <li class="nav-item {{ request()->routeIs('admin.servers.*','admin.products.*') ? 'menu-open' : '' }}">
+                        <a href="#" class="nav-link {{ request()->routeIs('admin.servers.*','admin.products.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-server"></i>
+                            <p>Infraestrutura<i class="bi bi-chevron-left right"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.servers.index') }}" class="nav-link {{ request()->routeIs('admin.servers.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Servidores</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.products.index') }}" class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Produtos</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('status.index') }}" target="_blank" class="nav-link">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Status da Rede <i class="bi bi-box-arrow-up-right" style="font-size:.6rem"></i></p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
 
-                    <li class="nav-item">
-                        <a href="{{ route('admin.cms.pages') }}" class="nav-link {{ request()->routeIs('admin.cms.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-file-earmark-text"></i><p>CMS</p>
+                    {{-- ═══════ Conteúdo ═══════ --}}
+                    <li class="nav-item {{ request()->routeIs('admin.cms.*','admin.notifications.*') ? 'menu-open' : '' }}">
+                        <a href="#" class="nav-link {{ request()->routeIs('admin.cms.*','admin.notifications.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-layout-text-window-reverse"></i>
+                            <p>Conteúdo<i class="bi bi-chevron-left right"></i></p>
                         </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.cms.pages') }}" class="nav-link {{ request()->routeIs('admin.cms.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>CMS / Páginas</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.notifications.email.templates') }}" class="nav-link {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>E-mail Templates</p>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.notifications.email.templates') }}" class="nav-link {{ request()->routeIs('admin.notifications.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-envelope"></i><p>Notificações</p>
+
+                    {{-- ═══════ Sistema & Configurações ═══════ --}}
+                    <li class="nav-item {{ request()->routeIs('admin.settings.*','admin.themes.*','admin.admins.*','admin.permissions','admin.logs.*') ? 'menu-open' : '' }}">
+                        <a href="#" class="nav-link {{ request()->routeIs('admin.settings.*','admin.themes.*','admin.admins.*','admin.permissions','admin.logs.*') ? 'active' : '' }}">
+                            <i class="nav-icon bi bi-gear"></i>
+                            <p>Sistema<i class="bi bi-chevron-left right"></i></p>
                         </a>
+                        <ul class="nav nav-treeview">
+                            @can('manage_settings')
+                            <li class="nav-item">
+                                <a href="{{ route('admin.settings.index') }}" class="nav-link {{ request()->routeIs('admin.settings.index') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Configurações</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.themes.index') }}" class="nav-link {{ request()->routeIs('admin.themes.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Temas</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.settings.cron') }}" class="nav-link {{ request()->routeIs('admin.settings.cron') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Cron Jobs</p>
+                                </a>
+                            </li>
+                            @endcan
+                            @can('manage_admins')
+                            <li class="nav-item">
+                                <a href="{{ route('admin.admins.index') }}" class="nav-link {{ request()->routeIs('admin.admins.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Administradores</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.permissions') }}" class="nav-link {{ request()->routeIs('admin.permissions') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Permissões</p>
+                                </a>
+                            </li>
+                            @endcan
+                            <li class="nav-item">
+                                <a href="{{ route('admin.logs.activity') }}" class="nav-link {{ request()->routeIs('admin.logs.*') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Logs</p>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
-                    @can('manage_admins')
-                    <li class="nav-item">
-                        <a href="{{ route('admin.admins.index') }}" class="nav-link {{ request()->routeIs('admin.admins.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-shield-person"></i><p>Admins</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.permissions') }}" class="nav-link {{ request()->routeIs('admin.permissions') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-key"></i><p>Permissões</p>
-                        </a>
-                    </li>
-                    @endcan
-                    <li class="nav-item">
-                        <a href="{{ route('admin.logs.activity') }}" class="nav-link {{ request()->routeIs('admin.logs.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-journal-text"></i><p>Logs</p>
-                        </a>
-                    </li>
-                    @can('manage_settings')
-                    <li class="nav-item">
-                        <a href="{{ route('admin.settings.index') }}" class="nav-link {{ request()->routeIs('admin.settings.index') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-gear"></i><p>Configurações</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.settings.cron') }}" class="nav-link {{ request()->routeIs('admin.settings.cron') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-clock-history"></i><p>Cron Jobs</p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.themes.index') }}" class="nav-link {{ request()->routeIs('admin.themes.*') ? 'active' : '' }}">
-                            <i class="nav-icon bi bi-palette"></i><p>Temas</p>
-                        </a>
-                    </li>
-                    @endcan
+
                 </ul>
             </nav>
         </div>

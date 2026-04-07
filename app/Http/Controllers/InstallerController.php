@@ -40,13 +40,25 @@ class InstallerController extends Controller
         try {
             // 1. Atualizar .env
             $this->updateEnv([
-                'APP_NAME'  => '"' . $request->app_name . '"',
-                'APP_URL'   => $request->app_url,
-                'DB_HOST'   => $request->db_host,
-                'DB_PORT'   => $request->db_port,
-                'DB_DATABASE' => $request->db_database,
-                'DB_USERNAME' => $request->db_username,
-                'DB_PASSWORD' => $request->db_password ?? '',
+                'APP_NAME'             => '"' . $request->app_name . '"',
+                'APP_ENV'              => 'production',
+                'APP_DEBUG'            => 'false',
+                'APP_URL'              => $request->app_url,
+                'APP_TIMEZONE'         => 'America/Sao_Paulo',
+                'APP_LOCALE'           => 'pt_BR',
+                'APP_FALLBACK_LOCALE'  => 'pt_BR',
+                'APP_FAKER_LOCALE'     => 'pt_BR',
+                'DB_CONNECTION'        => 'mysql',
+                'DB_HOST'              => $request->db_host,
+                'DB_PORT'              => $request->db_port,
+                'DB_DATABASE'          => $request->db_database,
+                'DB_USERNAME'          => $request->db_username,
+                'DB_PASSWORD'          => $request->db_password ?? '',
+                'QUEUE_CONNECTION'     => 'database',
+                'SESSION_DRIVER'       => 'database',
+                'CACHE_STORE'          => 'database',
+                'INSTALLED'            => 'true',
+                'INSTALLER_ENABLED'    => 'false',
             ]);
 
             // 2. Reconectar ao banco

@@ -9,6 +9,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 ## [Não Lançado]
 
 ### Segurança
+- Credenciais de servidores (`api_key`, `api_hash`, `password`) agora armazenadas criptografadas na tabela `servers` via cast `encrypted` do Eloquent (AES-256-CBC + HMAC)
+- Migration `2026_04_07_100000_encrypt_server_credentials` re-criptografa valores existentes em texto plano de forma idempotente (detecta se já é ciphertext antes de criptografar)
+- Coluna `password` adicionada à tabela `servers` (estava no modelo mas ausente na migration)
+- `api_hash` alterado de `VARCHAR(255)` para `TEXT` para suportar ciphertext AES
+- `$hidden` do modelo `Server` expandido para incluir `password`
+- Gateways de pagamento (PagHiper, MercadoPago, Efí, Banco Inter, Banco do Brasil, PagBank) confirmados como já armazenando credenciais criptografadas via `setSettingsEncryptedAttribute()` — sem leitura de `.env`
+- `.env.example`: removidas todas as variáveis legadas de gateways (`PAYPAL_*`, `PIX_GATEWAY_*`, `STRIPE_*`, `WHM_*`) e credenciais de servidores, substituídas por aviso de migração
 - Credenciais da Evolution API (URL, API Key, Instância) migradas do `.env` para a tabela `settings` no banco de dados, armazenadas com criptografia AES-256 via `Crypt::encryptString()`
 - Eliminado o método `saveWhatsApp()` que gravava diretamente no arquivo `.env` em disco — vetor de exposição em caso de leitura indevida do sistema de arquivos
 - `Setting::get()` agora descriptografa automaticamente campos do tipo `encrypted` na leitura

@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Server extends Model
 {
@@ -12,17 +12,20 @@ class Server extends Model
 
     protected $fillable = [
         'server_group_id', 'name', 'hostname', 'ip_address', 'ip_address_secondary', 'port',
-        'type', 'module', 'username', 'api_key', 'api_hash', 'password', 'max_accounts', 'current_accounts',
-        'secure', 'active', 'status', 'last_check_at', 'os_name', 'os_version', 'kernel',
-        'cpanel_version', 'php_version_default', 'php_versions_available', 'nameserver1',
-        'nameserver2', 'nameserver3', 'notes', 'meta',
+        'type', 'module', 'username', 'api_key', 'api_hash', 'password',
+        'max_accounts', 'current_accounts', 'secure', 'active', 'status', 'last_check_at',
+        'os_name', 'os_version', 'kernel', 'cpanel_version', 'php_version_default',
+        'php_versions_available', 'nameserver1', 'nameserver2', 'nameserver3', 'notes', 'meta',
     ];
 
-    protected $hidden = ['api_key', 'api_hash'];
+    protected $hidden = ['api_key', 'api_hash', 'password'];
 
     protected function casts(): array
     {
         return [
+            'api_key'                 => 'encrypted',
+            'api_hash'                => 'encrypted',
+            'password'                => 'encrypted',
             'secure'                  => 'boolean',
             'active'                  => 'boolean',
             'last_check_at'           => 'datetime',

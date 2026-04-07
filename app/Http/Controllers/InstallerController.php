@@ -119,7 +119,16 @@ class InstallerController extends Controller
                 // Pode falhar se link já existe — não é crítico
             }
 
-            // 11. Atualizar .env final (session/cache para database, marcar como instalado)
+            // 11. Limpar caches do Laravel
+            try {
+                Artisan::call('config:clear');
+                Artisan::call('cache:clear');
+                Artisan::call('view:clear');
+            } catch (\Exception $e) {
+                // Não é crítico
+            }
+
+            // 12. Atualizar .env final (session/cache para database, marcar como instalado)
             $this->updateEnv([
                 'QUEUE_CONNECTION'     => 'database',
                 'SESSION_DRIVER'       => 'database',
@@ -128,7 +137,7 @@ class InstallerController extends Controller
                 'INSTALLER_ENABLED'    => 'false',
             ]);
 
-            // 12. Marcar como instalado
+            // 13. Marcar como instalado
             file_put_contents(storage_path('installed'), now()->toDateTimeString());
 
             return response()->json(['success' => true, 'redirect' => url('/admin/entrar')]);

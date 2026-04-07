@@ -15,8 +15,13 @@ class ThemeServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Ativa o tema após todas as views serem carregadas
+        // Protegido contra erros de DB durante instalação
         $this->app->booted(function () {
-            $this->app->make(ThemeManager::class)->boot();
+            try {
+                $this->app->make(ThemeManager::class)->boot();
+            } catch (\Throwable $e) {
+                // Silenciar erros durante instalação (sem banco de dados)
+            }
         });
     }
 }

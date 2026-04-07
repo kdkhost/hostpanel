@@ -1,0 +1,339 @@
+/* ============================================================
+   KDK Host Theme — CSS Customizations
+   Framework base: TailwindCSS CDN + Bootstrap Icons
+   ============================================================ */
+
+:root {
+    --kdk-primary:      #1d4ed8;
+    --kdk-primary-dark: #1e3a8a;
+    --kdk-dark:         #0f172a;
+    --kdk-dark-2:       #1e293b;
+    --kdk-accent:       #10b981;
+    --kdk-accent-dark:  #059669;
+    --kdk-text:         #374151;
+    --kdk-muted:        #6b7280;
+    --kdk-border:       #e5e7eb;
+    --kdk-radius:       0.75rem;
+}
+
+/* ---- Global ---- */
+html { scroll-behavior: smooth; }
+
+*:focus-visible {
+    outline: 2px solid var(--kdk-primary);
+    outline-offset: 2px;
+}
+
+/* ---- Navbar ---- */
+.kdk-navbar {
+    background: var(--kdk-dark);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+}
+
+.kdk-navbar .nav-link {
+    color: rgba(255,255,255,.8);
+    font-size: .875rem;
+    font-weight: 500;
+    transition: color .15s;
+    padding: .5rem .75rem;
+}
+
+.kdk-navbar .nav-link:hover { color: #fff; }
+
+.kdk-logo {
+    font-size: 1.375rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -.03em;
+}
+
+.kdk-logo span { color: var(--kdk-accent); }
+
+/* ---- Mega dropdown ---- */
+.kdk-dropdown {
+    background: #fff;
+    border: 1px solid var(--kdk-border);
+    border-radius: var(--kdk-radius);
+    box-shadow: 0 20px 60px rgba(0,0,0,.12);
+    min-width: 240px;
+}
+
+/* ---- Hero ---- */
+.kdk-hero {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #1d4ed8 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.kdk-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.kdk-hero-content { position: relative; z-index: 1; }
+
+/* ---- Domain search bar ---- */
+.kdk-domain-search {
+    background: rgba(255,255,255,.1);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 1rem;
+    padding: 1.5rem;
+}
+
+.kdk-domain-input {
+    background: #fff;
+    border: 2px solid transparent;
+    border-radius: .75rem;
+    padding: .875rem 1.25rem;
+    font-size: 1rem;
+    width: 100%;
+    outline: none;
+    transition: border-color .2s;
+}
+
+.kdk-domain-input:focus { border-color: var(--kdk-accent); }
+
+/* ---- Buttons ---- */
+.btn-kdk-primary {
+    background: var(--kdk-primary);
+    color: #fff;
+    font-weight: 700;
+    border-radius: .75rem;
+    padding: .75rem 1.5rem;
+    border: none;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .9375rem;
+    text-decoration: none;
+}
+.btn-kdk-primary:hover { background: var(--kdk-primary-dark); color: #fff; }
+.btn-kdk-primary:active { transform: scale(.98); }
+
+.btn-kdk-accent {
+    background: var(--kdk-accent);
+    color: #fff;
+    font-weight: 700;
+    border-radius: .75rem;
+    padding: .75rem 1.5rem;
+    border: none;
+    cursor: pointer;
+    transition: background .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    text-decoration: none;
+}
+.btn-kdk-accent:hover { background: var(--kdk-accent-dark); color: #fff; }
+
+.btn-kdk-outline {
+    background: transparent;
+    color: #fff;
+    font-weight: 600;
+    border-radius: .75rem;
+    padding: .75rem 1.5rem;
+    border: 1.5px solid rgba(255,255,255,.4);
+    cursor: pointer;
+    transition: all .15s;
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    text-decoration: none;
+}
+.btn-kdk-outline:hover { border-color: #fff; background: rgba(255,255,255,.1); color: #fff; }
+
+/* ---- Quick links bar ---- */
+.kdk-quicklinks {
+    background: var(--kdk-dark-2);
+    border-bottom: 1px solid rgba(255,255,255,.07);
+}
+
+.kdk-quicklinks a {
+    color: rgba(255,255,255,.65);
+    font-size: .8125rem;
+    font-weight: 500;
+    transition: color .15s;
+    display: flex;
+    align-items: center;
+    gap: .375rem;
+    padding: .625rem .75rem;
+    text-decoration: none;
+}
+.kdk-quicklinks a:hover { color: #fff; }
+
+/* ---- Section styles ---- */
+.kdk-section { padding: 5rem 0; }
+.kdk-section-sm { padding: 3rem 0; }
+
+.kdk-section-title {
+    font-size: 1.875rem;
+    font-weight: 800;
+    color: var(--kdk-dark);
+    letter-spacing: -.03em;
+    line-height: 1.2;
+}
+
+.kdk-section-subtitle {
+    color: var(--kdk-muted);
+    font-size: 1.0625rem;
+    margin-top: .5rem;
+}
+
+/* ---- Product cards ---- */
+.kdk-card {
+    background: #fff;
+    border: 1.5px solid var(--kdk-border);
+    border-radius: 1rem;
+    transition: border-color .2s, box-shadow .2s, transform .2s;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.kdk-card:hover {
+    border-color: var(--kdk-primary);
+    box-shadow: 0 12px 40px rgba(29,78,216,.1);
+    transform: translateY(-3px);
+}
+
+.kdk-card.featured {
+    border-color: var(--kdk-primary);
+    box-shadow: 0 8px 30px rgba(29,78,216,.15);
+    position: relative;
+}
+
+.kdk-card .price {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--kdk-primary);
+    letter-spacing: -.04em;
+}
+
+.kdk-card .price-period { color: var(--kdk-muted); font-size: .8125rem; }
+
+/* ---- Category tabs ---- */
+.kdk-tab {
+    padding: .625rem 1.25rem;
+    border-radius: 2rem;
+    font-size: .875rem;
+    font-weight: 600;
+    border: 1.5px solid var(--kdk-border);
+    background: #fff;
+    color: var(--kdk-muted);
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+.kdk-tab.active, .kdk-tab:hover {
+    background: var(--kdk-primary);
+    color: #fff;
+    border-color: var(--kdk-primary);
+}
+
+/* ---- Feature list in cards ---- */
+.kdk-feature-list { list-style: none; padding: 0; margin: 0; }
+.kdk-feature-list li {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .875rem;
+    color: var(--kdk-text);
+    padding: .3rem 0;
+    border-bottom: 1px solid #f8fafc;
+}
+.kdk-feature-list li:last-child { border-bottom: none; }
+.kdk-feature-list li .check { color: var(--kdk-accent); font-size: .9rem; flex-shrink: 0; }
+
+/* ---- Domain pricing ---- */
+.kdk-domain-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .875rem 1rem;
+    border-radius: .75rem;
+    background: #f8fafc;
+    border: 1px solid var(--kdk-border);
+    margin-bottom: .5rem;
+}
+
+/* ---- Testimonials ---- */
+.kdk-testimonial {
+    background: #fff;
+    border: 1px solid var(--kdk-border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+}
+
+.kdk-testimonial .stars { color: #f59e0b; font-size: .875rem; }
+
+/* ---- Footer ---- */
+.kdk-footer {
+    background: var(--kdk-dark);
+    color: rgba(255,255,255,.6);
+    padding: 3.5rem 0 1.5rem;
+}
+
+.kdk-footer h6 {
+    color: #fff;
+    font-weight: 700;
+    font-size: .875rem;
+    margin-bottom: 1rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+.kdk-footer a {
+    color: rgba(255,255,255,.55);
+    text-decoration: none;
+    font-size: .875rem;
+    transition: color .15s;
+    display: block;
+    padding: .25rem 0;
+}
+.kdk-footer a:hover { color: #fff; }
+
+.kdk-footer-bottom {
+    border-top: 1px solid rgba(255,255,255,.08);
+    margin-top: 2.5rem;
+    padding-top: 1.25rem;
+    font-size: .8125rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .75rem;
+}
+
+/* ---- Cart badge ---- */
+.kdk-cart-badge {
+    background: var(--kdk-accent);
+    color: #fff;
+    font-size: .65rem;
+    font-weight: 800;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: absolute;
+    top: -4px;
+    right: -4px;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+    .kdk-section { padding: 3rem 0; }
+    .kdk-section-title { font-size: 1.5rem; }
+    .kdk-hero { padding: 3rem 0; }
+}

@@ -1,0 +1,18 @@
+{
+    "name": "KDK Host",
+    "description": "Tema oficial do site kdkhost.com.br — visual moderno com identidade KDK.",
+    "author": "KDK Host",
+    "version": "1.0.0",
+    "preview": "images/preview.png",
+    "supports": ["store", "client"],
+    "colors": {
+        "primary": "#0ea5e9",
+        "secondary": "#6366f1",
+        "dark": "#0f172a",
+        "accent": "#f59e0b"
+    },
+    "fonts": {
+        "heading": "Inter",
+        "body": "Inter"
+    }
+}

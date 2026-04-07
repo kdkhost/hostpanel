@@ -1,0 +1,109 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+@source '../**/*.jsx';
+
+@theme {
+    --font-sans: 'Inter', 'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
+        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+
+    --color-primary-50:  #eff6ff;
+    --color-primary-100: #dbeafe;
+    --color-primary-200: #bfdbfe;
+    --color-primary-500: #3b82f6;
+    --color-primary-600: #1a56db;
+    --color-primary-700: #1e429f;
+    --color-primary-800: #1e3a8a;
+    --color-primary-900: #1e3060;
+}
+
+/* HostPanel Global Utilities */
+@layer base {
+    html { scroll-behavior: smooth; }
+    body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    [x-cloak] { display: none !important; }
+}
+
+@layer components {
+    .hp-card {
+        @apply bg-white rounded-xl border border-gray-100 shadow-sm;
+    }
+
+    .hp-btn-primary {
+        @apply bg-primary-600 hover:bg-primary-700 text-white font-semibold px-4 py-2.5 rounded-lg text-sm transition-colors;
+    }
+
+    .hp-btn-secondary {
+        @apply border border-gray-200 text-gray-700 hover:bg-gray-50 font-semibold px-4 py-2.5 rounded-lg text-sm transition-colors;
+    }
+
+    .hp-input {
+        @apply w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary-600 focus:ring-2 focus:ring-primary-600/10 transition-colors;
+    }
+
+    .hp-badge {
+        @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    }
+
+    .hp-badge-success { @apply hp-badge bg-green-100 text-green-700; }
+    .hp-badge-warning { @apply hp-badge bg-amber-100 text-amber-700; }
+    .hp-badge-danger  { @apply hp-badge bg-red-100 text-red-700; }
+    .hp-badge-info    { @apply hp-badge bg-blue-100 text-blue-700; }
+    .hp-badge-gray    { @apply hp-badge bg-gray-100 text-gray-600; }
+
+    .hp-page-header {
+        @apply flex items-center justify-between flex-wrap gap-3 mb-6;
+    }
+
+    .hp-table {
+        @apply w-full text-sm;
+    }
+
+    .hp-table th {
+        @apply text-left text-xs font-semibold text-gray-500 uppercase tracking-wider px-4 py-3 bg-gray-50 border-b border-gray-100;
+    }
+
+    .hp-table td {
+        @apply px-4 py-3.5 border-b border-gray-50 text-gray-800;
+    }
+
+    .hp-table tr:last-child td { @apply border-b-0; }
+    .hp-table tr:hover td { @apply bg-gray-50/50; }
+
+    /* Spinner */
+    .hp-spinner {
+        @apply inline-block w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full animate-spin;
+    }
+
+    /* Gradient text */
+    .hp-gradient-text {
+        background: linear-gradient(135deg, #1a56db, #7c3aed);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+}
+
+/* Animations */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-in-up { animation: fadeInUp .3s ease both; }
+.animate-slide-in-right { animation: slideInRight .3s ease both; }
+
+/* Print styles */
+@media print {
+    .no-print { display: none !important; }
+    body { background: white; }
+    .hp-card { box-shadow: none; border: 1px solid #e5e7eb; }
+}

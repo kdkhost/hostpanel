@@ -1,0 +1,12 @@
+{
+    "name": "Padrão (Sistema)",
+    "description": "Tema padrão do HostPanel. Utiliza as views e assets base do sistema sem customizações.",
+    "author": "HostPanel",
+    "version": "1.0.0",
+    "preview": null,
+    "supports": ["store", "client", "admin"],
+    "colors": {
+        "primary": "#4f46e5",
+        "secondary": "#7c3aed"
+    }
+}

@@ -33,7 +33,7 @@ return new class extends Migration
             $table->string('module')->default('none')->comment('cpanel, plesk, directadmin, etc.');
             $table->enum('billing_cycle_type', ['one_time', 'recurring'])->default('recurring');
             $table->boolean('require_domain')->default(false);
-            $table->boolean('auto_setup', )->default(true);
+            $table->boolean('auto_setup')->default(true);
             $table->enum('auto_setup_type', ['payment', 'order', 'manual'])->default('payment');
             $table->json('configurable_options')->nullable();
             $table->json('custom_fields')->nullable();

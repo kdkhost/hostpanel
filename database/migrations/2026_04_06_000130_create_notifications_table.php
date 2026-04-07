@@ -49,7 +49,7 @@ return new class extends Migration
             $table->json('meta')->nullable();
             $table->timestamps();
 
-            $table->index(['notifiable_type', 'notifiable_id']);
+            // morphs() já cria index em notifiable_type + notifiable_id
             $table->index(['channel', 'status']);
         });
 

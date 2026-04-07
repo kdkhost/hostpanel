@@ -39,7 +39,7 @@ return new class extends Migration
             $table->string('city')->nullable();
             $table->timestamps();
 
-            $table->index(['authenticatable_type', 'authenticatable_id']);
+            // morphs() já cria index em authenticatable_type + authenticatable_id
             $table->index('ip_address');
             $table->index('created_at');
         });

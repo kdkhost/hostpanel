@@ -16,16 +16,16 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('servers')) {
+            return;
+        }
+
         Schema::table('servers', function (Blueprint $table) {
             // Adiciona password se não existir
             if (!Schema::hasColumn('servers', 'password')) {
                 $table->text('password')->nullable()->after('api_hash')
                       ->comment('Senha de acesso — armazenada criptografada (AES-256)');
             }
-
-            // Amplia api_hash para text (varchar(255) é curto para ciphertext)
-            $table->text('api_hash')->nullable()->change()
-                  ->comment('WHM hash auth legado — armazenado criptografado (AES-256)');
         });
 
         // Re-criptografa valores existentes em texto plano
@@ -34,7 +34,7 @@ return new class extends Migration
             $updates = [];
 
             foreach (['api_key', 'api_hash', 'password'] as $field) {
-                $value = $server->{$field};
+                $value = $server->{$field} ?? null;
                 if (!empty($value) && !static::isCiphertext($value)) {
                     $updates[$field] = Crypt::encryptString($value);
                 }

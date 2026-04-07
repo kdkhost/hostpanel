@@ -26,7 +26,7 @@ return new class extends Migration
             $table->string('ip_address_secondary', 45)->nullable();
             $table->unsignedSmallInteger('port')->default(2087);
             $table->enum('type', ['shared', 'reseller', 'vps', 'dedicated', 'other'])->default('shared');
-            $table->enum('module', ['cpanel', 'plesk', 'directadmin', 'ispconfig', 'none'])->default('cpanel');
+            $table->enum('module', ['cpanel', 'whm', 'plesk', 'directadmin', 'ispconfig', 'aapanel', 'none'])->default('cpanel');
             $table->string('username')->nullable();
             $table->text('api_key')->nullable()->comment('WHM API token - never expose as plain text');
             $table->string('api_hash')->nullable()->comment('Legacy WHM hash auth');

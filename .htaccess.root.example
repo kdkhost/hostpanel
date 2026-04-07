@@ -1,0 +1,87 @@
+# =============================================================================
+#  HostPanel — .htaccess para Instalação na RAIZ (public_html)
+#  Use este arquivo se estiver instalando diretamente em public_html/
+#  O sistema será acessível em: https://seudominio.com/
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+#  FORÇAR PHP 8.4 (cPanel EasyApache)
+#  Ajuste se seu servidor usar outra versão: ea-php83, ea-php85, etc.
+# -----------------------------------------------------------------------------
+<IfModule mime_module>
+    AddHandler application/x-httpd-ea-php84 .php
+</IfModule>
+
+# -----------------------------------------------------------------------------
+#  REWRITE — Laravel public/ como root
+# -----------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # Redirecionar www para não-www (opcional - descomente se desejar)
+    # RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+    # RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+    
+    # Redirecionar HTTP para HTTPS (opcional - descomente se tiver SSL)
+    # RewriteCond %{HTTPS} off
+    # RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+    
+    # Se for um arquivo/pasta real em public/, serve diretamente
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f [OR]
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -d
+    RewriteRule ^(.*)$ public/$1 [L]
+    
+    # Tudo o mais vai para public/index.php (front controller)
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteRule ^(.*)$ public/index.php [L,QSA]
+</IfModule>
+
+# -----------------------------------------------------------------------------
+#  SEGURANÇA — Proteger arquivos sensíveis
+# -----------------------------------------------------------------------------
+# Negar acesso a arquivos começando com ponto
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Negar acesso a arquivos de configuração
+<FilesMatch "(\.env|\.gitignore|composer\.(json|lock)|package\.json|phpunit\.xml|webpack\.mix\.js)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Proteger diretórios sensíveis (exceto public/)
+RedirectMatch 403 ^/(app|bootstrap|config|database|resources|routes|storage|tests|vendor)/.*$
+
+# -----------------------------------------------------------------------------
+#  CACHE — Headers para assets estáticos
+# -----------------------------------------------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType font/woff2 "access plus 1 month"
+</IfModule>
+
+# -----------------------------------------------------------------------------
+#  SEGURANÇA — Headers HTTP
+# -----------------------------------------------------------------------------
+<IfModule mod_headers.c>
+    # Prevenir clickjacking
+    Header always set X-Frame-Options "SAMEORIGIN"
+    
+    # XSS Protection
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Content-Type nosniff
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

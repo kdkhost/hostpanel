@@ -1,0 +1,63 @@
+# =============================================================================
+#  HostPanel — .htaccess para Instalação em SUBDIRETÓRIO
+#  Coloque este arquivo na pasta onde deseja instalar (ex: /hostpanel/)
+#  O sistema será acessível em: https://seudominio.com/hostpanel/
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+#  FORÇAR PHP 8.4 (cPanel EasyApache)
+#  Ajuste se seu servidor usar outra versão: ea-php83, ea-php85, etc.
+# -----------------------------------------------------------------------------
+<IfModule mime_module>
+    AddHandler application/x-httpd-ea-php84 .php
+</IfModule>
+
+# -----------------------------------------------------------------------------
+#  REWRITE — Redireciona tudo para pasta public/
+#  AJUSTE RewriteBase se estiver em subdiretório!
+#  Ex: RewriteBase /hostpanel/  (se URL for https://dominio.com/hostpanel/)
+# -----------------------------------------------------------------------------
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+    
+    # Se a requisição não é para um arquivo/pasta existente
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    
+    # Redireciona para public/
+    RewriteRule ^(.*)$ public/$1 [L,QSA]
+    
+    # Se acessar a raiz, redireciona para public/index.php
+    RewriteRule ^$ public/index.php [L,QSA]
+</IfModule>
+
+# -----------------------------------------------------------------------------
+#  SEGURANÇA — Proteger arquivos sensíveis
+# -----------------------------------------------------------------------------
+# Negar acesso a arquivos de configuração
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Negar acesso a arquivos comuns de configuração/senha
+<FilesMatch "(\.env|\.gitignore|composer\.(json|lock)|package\.json|phpunit\.xml|webpack\.mix\.js)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Proteger diretórios sensíveis
+RedirectMatch 403 ^/(storage|bootstrap|config|database|resources|routes|vendor)/.*$
+
+# -----------------------------------------------------------------------------
+#  CACHE — Headers para assets estáticos
+# -----------------------------------------------------------------------------
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+</IfModule>

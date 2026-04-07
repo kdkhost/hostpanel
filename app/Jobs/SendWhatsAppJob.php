@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\NotificationLog;
+use App\Models\Setting;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -66,9 +67,9 @@ class SendWhatsAppJob implements ShouldQueue
         $delay = rand($this->minDelaySeconds, $this->maxDelaySeconds);
         sleep($delay);
 
-        $baseUrl  = rtrim(config('hostpanel.evolution_api.url', ''), '/');
-        $apiKey   = config('hostpanel.evolution_api.key', '');
-        $instance = config('hostpanel.evolution_api.instance', '');
+        $baseUrl  = rtrim(Setting::get('integration.whatsapp.url',      config('hostpanel.evolution_api.url', '')), '/');
+        $apiKey   = Setting::get('integration.whatsapp.api_key',         config('hostpanel.evolution_api.key', ''));
+        $instance = Setting::get('integration.whatsapp.instance',        config('hostpanel.evolution_api.instance', ''));
 
         if (!$baseUrl || !$apiKey || !$instance) {
             Log::warning("SendWhatsAppJob: Evolution API não configurada.");

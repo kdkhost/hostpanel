@@ -48,6 +48,11 @@ class SettingSeeder extends Seeder
             ['group' => 'support', 'key' => 'support.ticket_auto_close_days', 'value' => '7', 'type' => 'integer', 'label' => 'Fechar tickets respondidos após (dias)'],
             ['group' => 'support', 'key' => 'support.rating_enabled',          'value' => '1', 'type' => 'boolean', 'label' => 'Habilitar avaliação de tickets'],
 
+            // Integrações — Evolution API (WhatsApp)
+            ['group' => 'integrations', 'key' => 'integration.whatsapp.url',      'value' => '', 'type' => 'encrypted', 'label' => 'Evolution API — URL',          'description' => 'Ex: https://api.evolution.com (sem barra no final)'],
+            ['group' => 'integrations', 'key' => 'integration.whatsapp.api_key',  'value' => '', 'type' => 'encrypted', 'label' => 'Evolution API — API Key',       'description' => 'Chave de autenticação da API Evolution'],
+            ['group' => 'integrations', 'key' => 'integration.whatsapp.instance', 'value' => '', 'type' => 'encrypted', 'label' => 'Evolution API — Instância',     'description' => 'Nome da instância configurada na Evolution API'],
+
             // Módulos
             ['group' => 'modules', 'key' => 'modules.whatsapp',  'value' => '0', 'type' => 'boolean', 'label' => 'Módulo WhatsApp'],
             ['group' => 'modules', 'key' => 'modules.domains',   'value' => '1', 'type' => 'boolean', 'label' => 'Módulo Domínios'],

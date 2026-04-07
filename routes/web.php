@@ -375,11 +375,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/reembolso/{transaction}', [\App\Http\Controllers\Admin\GatewayController::class, 'refund'])->name('refund');
         });
 
-        // WhatsApp (Evolution API) — configuração global
-        Route::prefix('configuracoes/whatsapp')->name('settings.whatsapp.')->group(function () {
-            Route::post('/salvar',  [\App\Http\Controllers\Admin\SettingController::class, 'saveWhatsApp'])->name('save');
-            Route::post('/testar',  [\App\Http\Controllers\Admin\SettingController::class, 'testWhatsApp'])->name('test');
-        });
+        // WhatsApp (Evolution API) — teste de conexão
+        Route::post('configuracoes/whatsapp/testar', [\App\Http\Controllers\Admin\SettingController::class, 'testWhatsApp'])
+            ->name('settings.whatsapp.test');
 
         // Webhooks recebidos de gateways (legado)
         Route::post('/webhook/{gateway}', [\App\Http\Controllers\Admin\GatewayController::class, 'webhook'])

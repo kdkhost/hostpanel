@@ -88,50 +88,30 @@ class SettingController extends Controller
 
     public function update(Request $request): JsonResponse
     {
+        $encryptedKeys = Setting::whereIn('type', ['encrypted'])
+            ->pluck('type', 'key')
+            ->toArray();
+
         foreach ($request->except(['_token', '_method']) as $key => $value) {
-            Setting::set($key, $value);
+            if (isset($encryptedKeys[$key])) {
+                if ($value !== '' && $value !== null) {
+                    Setting::setEncrypted($key, (string) $value);
+                }
+                // valor vazio = manter o anterior (não sobrescreve)
+            } else {
+                Setting::set($key, $value);
+            }
         }
+
         Setting::flush();
         return response()->json(['message' => 'Configurações salvas com sucesso!']);
     }
 
-    public function saveWhatsApp(Request $request): JsonResponse
-    {
-        $request->validate([
-            'url'      => 'required|url',
-            'api_key'  => 'required|string',
-            'instance' => 'required|string',
-        ]);
-
-        $env = base_path('.env');
-        $contents = file_get_contents($env);
-
-        $map = [
-            'EVOLUTION_API_URL'      => $request->url,
-            'EVOLUTION_API_KEY'      => $request->api_key,
-            'EVOLUTION_API_INSTANCE' => $request->instance,
-        ];
-
-        foreach ($map as $key => $value) {
-            if (str_contains($contents, "{$key}=")) {
-                $contents = preg_replace("/^{$key}=.*/m", "{$key}={$value}", $contents);
-            } else {
-                $contents .= "\n{$key}={$value}";
-            }
-        }
-
-        file_put_contents($env, $contents);
-
-        \Illuminate\Support\Facades\Artisan::call('config:clear');
-
-        return response()->json(['message' => 'Configurações do WhatsApp salvas!']);
-    }
-
     public function testWhatsApp(Request $request): JsonResponse
     {
-        $url      = rtrim($request->input('url', config('hostpanel.evolution_api.url')), '/');
-        $apiKey   = $request->input('api_key', config('hostpanel.evolution_api.key'));
-        $instance = $request->input('instance', config('hostpanel.evolution_api.instance'));
+        $url      = rtrim($request->input('url',      Setting::get('integration.whatsapp.url', '')), '/');
+        $apiKey   = $request->input('api_key',   Setting::get('integration.whatsapp.api_key', ''));
+        $instance = $request->input('instance',  Setting::get('integration.whatsapp.instance', ''));
 
         try {
             $res = \Illuminate\Support\Facades\Http::withHeaders(['apikey' => $apiKey])

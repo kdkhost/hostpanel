@@ -8,6 +8,22 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
 ## [Não Lançado]
 
+### Segurança
+- Credenciais da Evolution API (URL, API Key, Instância) migradas do `.env` para a tabela `settings` no banco de dados, armazenadas com criptografia AES-256 via `Crypt::encryptString()`
+- Eliminado o método `saveWhatsApp()` que gravava diretamente no arquivo `.env` em disco — vetor de exposição em caso de leitura indevida do sistema de arquivos
+- `Setting::get()` agora descriptografa automaticamente campos do tipo `encrypted` na leitura
+- `Setting::setEncrypted()` novo método que sempre armazena o valor criptografado
+- `SettingController::update()` detecta campos `type=encrypted` e nunca sobrescreve com valor vazio (manter o atual se campo deixado em branco)
+- `.env.example` atualizado com aviso de que as credenciais WhatsApp estão no banco
+
+### Alterado
+- `WhatsAppService`: lê URL, API Key e instância via `Setting::get('integration.whatsapp.*')` com fallback para `config()` para compatibilidade
+- `SendWhatsAppJob`: idem, lê credenciais do banco no momento da execução do job
+- `SettingController::testWhatsApp()`: lê credenciais do banco em vez do `config()`
+- Rota `POST /admin/configuracoes/whatsapp/salvar` removida (era usada pelo método que gravava no `.env`)
+- Admin → Configurações → Integrações: campos `encrypted` renderizados como `<input type="password">` com ícone de cadeado, toggle mostrar/ocultar, e indicador visual "armazenado criptografado"
+- Botão "Testar Conexão WhatsApp" adicionado na aba Integrações das configurações
+
 ### Adicionado
 - Página pública `/status` com status de todos os servidores em tempo real
 - API JSON pública em `/status/api` para integrações externas

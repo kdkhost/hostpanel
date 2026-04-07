@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Jobs\SendWhatsAppJob;
 use App\Models\Client;
 use App\Models\Invoice;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -20,10 +21,10 @@ class WhatsAppService
 
     public function __construct()
     {
-        $this->baseUrl  = rtrim(config('hostpanel.evolution_api.url', ''), '/');
-        $this->apiKey   = config('hostpanel.evolution_api.key', '');
-        $this->instance = config('hostpanel.evolution_api.instance', '');
-        $this->enabled  = (bool) config('hostpanel.modules.whatsapp', false);
+        $this->baseUrl  = rtrim(Setting::get('integration.whatsapp.url',      config('hostpanel.evolution_api.url', '')), '/');
+        $this->apiKey   = Setting::get('integration.whatsapp.api_key',         config('hostpanel.evolution_api.key', ''));
+        $this->instance = Setting::get('integration.whatsapp.instance',        config('hostpanel.evolution_api.instance', ''));
+        $this->enabled  = (bool) Setting::get('modules.whatsapp',              config('hostpanel.modules.whatsapp', false));
     }
 
     /* ------------------------------------------------------------------ */

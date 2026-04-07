@@ -136,7 +136,15 @@ class InstallerController extends Controller
         $env = file_get_contents($envFile);
 
         foreach ($data as $key => $value) {
-            $pattern = "/^{$key}=.*/m";
+            // Escapar caracteres especiais para regex
+            $escapedKey = preg_quote($key, '/');
+            $pattern = "/^{$escapedKey}=.*/m";
+            
+            // Valor pode precisar de aspas se tiver espaços
+            if (str_contains($value, ' ') || str_contains($value, '#')) {
+                $value = '"' . $value . '"';
+            }
+            
             $replace = "{$key}={$value}";
             if (preg_match($pattern, $env)) {
                 $env = preg_replace($pattern, $replace, $env);

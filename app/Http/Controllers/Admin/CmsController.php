@@ -64,7 +64,7 @@ class CmsController extends Controller
     public function storeAnnouncement(Request $request): JsonResponse
     {
         $request->validate(['title' => 'required|string', 'content' => 'required|string']);
-        $ann = Announcement::create(array_merge($request->all(), ['slug' => Str::slug($request->title . '-' . now()->timestamp)]));
+        $ann = Announcement::create($request->only(['title', 'content', 'type', 'published']));
         return response()->json(['message' => 'Anúncio criado!', 'announcement' => $ann], 201);
     }
 

@@ -20,8 +20,7 @@ class HomeController extends Controller
               ->limit(3)
         ])->where('active', true)->orderBy('sort_order')->get();
 
-        $announcements = Announcement::where('active', true)
-            ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>=', now()))
+        $announcements = Announcement::where('published', true)
             ->orderByDesc('created_at')->limit(3)->get();
 
         return view('home.index', compact('groups', 'announcements'));
@@ -54,13 +53,13 @@ class HomeController extends Controller
 
     public function page(string $slug)
     {
-        $page = Page::where('slug', $slug)->where('active', true)->firstOrFail();
+        $page = Page::where('slug', $slug)->where('published', true)->firstOrFail();
         return view('home.page', compact('page'));
     }
 
     public function knowledgeBase(Request $request)
     {
-        $articles = KnowledgeBase::where('active', true)
+        $articles = KnowledgeBase::where('published', true)
             ->when($request->q, fn($q) =>
                 $q->where('title', 'like', "%{$request->q}%")
                   ->orWhere('content', 'like', "%{$request->q}%")
@@ -71,15 +70,14 @@ class HomeController extends Controller
 
     public function kbArticle(string $slug)
     {
-        $article = KnowledgeBase::where('slug', $slug)->where('active', true)->firstOrFail();
+        $article = KnowledgeBase::where('slug', $slug)->where('published', true)->firstOrFail();
         $article->increment('views');
         return view('home.kb-article', compact('article'));
     }
 
     public function announcements()
     {
-        $announcements = Announcement::where('active', true)
-            ->where(fn($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>=', now()))
+        $announcements = Announcement::where('published', true)
             ->orderByDesc('created_at')->paginate(10);
         return view('home.announcements', compact('announcements'));
     }

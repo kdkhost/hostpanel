@@ -6,6 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class KnowledgeBase extends Model
 {
-    protected $fillable = ['title', 'slug', 'content', 'category', 'tags', 'active', 'views', 'helpful', 'not_helpful'];
-    protected function casts(): array { return ['active' => 'boolean', 'tags' => 'array']; }
+    protected $fillable = ['title', 'slug', 'content', 'category', 'tags', 'published', 'views', 'sort_order'];
+    protected function casts(): array { return ['published' => 'boolean', 'tags' => 'array']; }
 }

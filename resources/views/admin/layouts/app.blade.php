@@ -68,33 +68,79 @@
     {{-- Navbar --}}
     <nav class="main-header navbar navbar-expand navbar-white navbar-light">
         <ul class="navbar-nav">
-            <li class="nav-item"><a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="bi bi-list"></i></a></li>
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="bi bi-list fs-5"></i></a>
+            </li>
+            <li class="nav-item d-none d-md-block">
+                <a class="nav-link" href="{{ route('home') }}" target="_blank" title="Voltar ao site">
+                    <i class="bi bi-box-arrow-up-right me-1"></i>Ver Site
+                </a>
+            </li>
         </ul>
         <ul class="navbar-nav ms-auto">
-            {{-- Voltar ao Site --}}
+            {{-- Busca rápida --}}
             <li class="nav-item">
-                <a class="nav-link" href="{{ route('home') }}" target="_blank" title="Voltar ao site">
-                    <i class="bi bi-box-arrow-up-right"></i> <span class="d-none d-md-inline">Ver Site</span>
+                <a class="nav-link" data-widget="navbar-search" href="#" role="button" title="Buscar">
+                    <i class="bi bi-search"></i>
                 </a>
             </li>
-            {{-- Notificações rápidas --}}
+
+            {{-- Alertas / Notificações --}}
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-bs-toggle="dropdown" href="#" title="Notificações">
+                    <i class="bi bi-bell fs-5"></i>
+                    <span class="badge bg-danger navbar-badge" id="notif-badge" style="display:none">0</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-end dropdown-menu-lg" style="min-width:320px">
+                    <span class="dropdown-header">Notificações</span>
+                    <div id="notif-list">
+                        <a href="#" class="dropdown-item text-muted text-center small py-3">Nenhuma notificação</a>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="{{ route('admin.tickets.index') }}" class="dropdown-item dropdown-footer">Ver todos os tickets</a>
+                </div>
+            </li>
+
+            {{-- Pedidos pendentes --}}
+            <li class="nav-item">
+                <a class="nav-link" href="{{ Route::has('admin.orders.index') ? route('admin.orders.index') : route('admin.invoices.index') }}" title="Pedidos/Faturas">
+                    <i class="bi bi-cart3 fs-5"></i>
+                    <span class="badge bg-warning text-dark navbar-badge" id="orders-badge" style="display:none">0</span>
+                </a>
+            </li>
+
+            {{-- Tickets abertos --}}
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('admin.tickets.index') }}" title="Tickets abertos">
-                    <i class="bi bi-headset"></i>
+                    <i class="bi bi-headset fs-5"></i>
+                    <span class="badge bg-info navbar-badge" id="tickets-badge" style="display:none">0</span>
                 </a>
             </li>
+
             {{-- Perfil do admin --}}
             <li class="nav-item dropdown">
-                <a class="nav-link" data-bs-toggle="dropdown" href="#">
-                    <i class="bi bi-person-circle fs-5"></i>
-                    <span class="ms-1 d-none d-md-inline">{{ auth('admin')->user()->name }}</span>
+                <a class="nav-link d-flex align-items-center" data-bs-toggle="dropdown" href="#">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white fw-bold" style="width:32px;height:32px;font-size:.8rem">
+                        {{ strtoupper(substr(auth('admin')->user()->name, 0, 2)) }}
+                    </div>
+                    <span class="ms-2 d-none d-md-inline fw-semibold">{{ auth('admin')->user()->name }}</span>
+                    <i class="bi bi-chevron-down ms-1 d-none d-md-inline" style="font-size:.65rem"></i>
                 </a>
-                <div class="dropdown-menu dropdown-menu-end">
-                    <span class="dropdown-item-text text-muted small">{{ auth('admin')->user()->email }}</span>
+                <div class="dropdown-menu dropdown-menu-end shadow" style="min-width:220px">
+                    <div class="px-3 py-2">
+                        <div class="fw-semibold">{{ auth('admin')->user()->name }}</div>
+                        <div class="text-muted small">{{ auth('admin')->user()->email }}</div>
+                        <div class="text-muted small"><i class="bi bi-shield-check me-1"></i>{{ auth('admin')->user()->getRoleNames()->first() ?? 'Admin' }}</div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    @if(Route::has('admin.settings.index'))
+                    <a href="{{ route('admin.settings.index') }}" class="dropdown-item"><i class="bi bi-gear me-2"></i>Configurações</a>
+                    @endif
+                    <a href="{{ route('admin.logs.activity') }}" class="dropdown-item"><i class="bi bi-journal-text me-2"></i>Logs de Atividade</a>
                     <div class="dropdown-divider"></div>
                     <form method="POST" action="{{ route('admin.logout') }}">
                         @csrf
-                        <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-1"></i>Sair</button>
+                        <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i>Sair</button>
                     </form>
                 </div>
             </li>
@@ -353,6 +399,8 @@
     </footer>
 </div>
 
+{{-- jQuery (required by AdminLTE 3) --}}
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
 {{-- Bootstrap 5 + AdminLTE JS --}}
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2.0/dist/js/adminlte.min.js"></script>
@@ -360,6 +408,43 @@
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 {{-- Chart.js --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+
+{{-- Treeview init + Navbar badges --}}
+<script>
+$(function(){
+    // Force AdminLTE treeview init
+    $('[data-widget="treeview"]').each(function(){ new AdminLte.Treeview(this, {animationSpeed:300, accordion:false}); });
+    // Fallback: manual treeview toggle if AdminLTE widget fails
+    $('.nav-sidebar .nav-link').on('click', function(e){
+        const li = $(this).closest('.nav-item');
+        if(li.find('.nav-treeview').length && $(this).attr('href') === '#'){
+            e.preventDefault();
+            li.toggleClass('menu-open');
+            li.find('> .nav-treeview').slideToggle(200);
+        }
+    });
+    // Init: hide closed treeviews
+    $('.nav-sidebar .nav-item:not(.menu-open) > .nav-treeview').hide();
+    $('.nav-sidebar .nav-item.menu-open > .nav-treeview').show();
+
+    // Load navbar badges
+    (async function(){
+        try {
+            const stats = await fetch('{{ route("admin.dashboard.stats") }}',{headers:{'Accept':'application/json','X-CSRF-TOKEN':document.querySelector('meta[name=csrf-token]').content}}).then(r=>r.json());
+            if(stats.open_tickets > 0){ $('#tickets-badge').text(stats.open_tickets).show(); }
+            if(stats.pending_invoices > 0){ $('#orders-badge').text(stats.pending_invoices).show(); }
+            const total = (stats.open_tickets||0) + (stats.pending_invoices||0);
+            if(total > 0){
+                $('#notif-badge').text(total).show();
+                let html = '';
+                if(stats.open_tickets) html += `<a href="{{ route('admin.tickets.index') }}" class="dropdown-item"><i class="bi bi-headset me-2 text-info"></i>${stats.open_tickets} ticket(s) aberto(s)</a>`;
+                if(stats.pending_invoices) html += `<a href="{{ route('admin.invoices.index') }}" class="dropdown-item"><i class="bi bi-receipt me-2 text-warning"></i>${stats.pending_invoices} fatura(s) pendente(s)</a>`;
+                $('#notif-list').html(html);
+            }
+        } catch(e){}
+    })();
+});
+</script>
 
 <script>
     window.HostPanel = {

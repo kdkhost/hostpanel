@@ -62,13 +62,21 @@ class DashboardController extends Controller
                 ->where('date_paid', '>=', now()->subMonths(11)->startOfMonth())
                 ->groupBy('month')
                 ->orderBy('month')
-                ->pluck('total', 'month');
+                ->pluck('total', 'month')
+                ->toArray();
 
             $recentTransactions = Transaction::with('client')
                 ->where('status', 'completed')
                 ->orderByDesc('created_at')
                 ->limit(10)
-                ->get();
+                ->get()
+                ->map(fn($tx) => [
+                    'client_name' => $tx->client->name ?? '—',
+                    'amount'      => $tx->amount ?? 0,
+                    'gateway'     => $tx->gateway ?? '—',
+                    'created_at'  => $tx->created_at?->toDateTimeString(),
+                ])
+                ->toArray();
 
             $suspendedToday = Service::where('status', 'suspended')
                 ->whereDate('updated_at', today())
@@ -84,8 +92,8 @@ class DashboardController extends Controller
                 'overdue_amount'       => $overdueAmount,
                 'servers_online'       => $serversOnline,
                 'servers_offline'      => $serversOffline,
-                'revenue_chart'        => $revenueChart,
-                'recent_transactions'  => $recentTransactions,
+                'revenue_chart'        => $revenueChart,       // plain array
+                'recent_transactions'  => $recentTransactions,  // plain array
                 'suspended_today'      => $suspendedToday,
                 'total_clients'        => Client::count(),
             ];

@@ -110,14 +110,12 @@
                             <thead class="table-light"><tr><th>Cliente</th><th>Valor</th><th>Gateway</th><th>Data</th></tr></thead>
                             <tbody>
                                 @forelse($stats['recent_transactions'] ?? [] as $tx)
-                                @if(is_object($tx))
                                 <tr>
-                                    <td>{{ $tx->client->name ?? '—' }}</td>
-                                    <td class="fw-semibold text-success">R$ {{ number_format($tx->amount ?? 0, 2, ',', '.') }}</td>
-                                    <td><span class="badge bg-info text-dark">{{ $tx->gateway ?? '—' }}</span></td>
-                                    <td class="text-muted small">{{ \Carbon\Carbon::parse($tx->created_at)->format('d/m/Y H:i') }}</td>
+                                    <td>{{ $tx['client_name'] ?? '—' }}</td>
+                                    <td class="fw-semibold text-success">R$ {{ number_format($tx['amount'] ?? 0, 2, ',', '.') }}</td>
+                                    <td><span class="badge bg-info text-dark">{{ $tx['gateway'] ?? '—' }}</span></td>
+                                    <td class="text-muted small">{{ $tx['created_at'] ? \Carbon\Carbon::parse($tx['created_at'])->format('d/m/Y H:i') : '—' }}</td>
                                 </tr>
-                                @endif
                                 @empty
                                 <tr><td colspan="4" class="text-center text-muted py-3">Nenhuma transação encontrada.</td></tr>
                                 @endforelse
@@ -163,8 +161,8 @@
 function dashboard() { return {}; }
 
 // Revenue Chart
-const revenueLabels = @json(array_keys(($stats['revenue_chart'] ?? collect())->toArray()));
-const revenueData   = @json(array_values(($stats['revenue_chart'] ?? collect())->toArray()));
+const revenueLabels = @json(array_keys($stats['revenue_chart'] ?? []));
+const revenueData   = @json(array_values($stats['revenue_chart'] ?? []));
 
 new Chart(document.getElementById('revenueChart'), {
     type: 'line',

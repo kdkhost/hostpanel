@@ -47,55 +47,8 @@ class InstallerController extends Controller
                 config()->set('app.key', $appKey);
             }
 
-            // 2. Configurar conexão MySQL em runtime ANTES de qualquer acesso ao banco
-            config()->set('database.default', 'mysql');
-            config()->set('database.connections.mysql.host', $request->db_host);
-            config()->set('database.connections.mysql.port', (int) $request->db_port);
-            config()->set('database.connections.mysql.database', $request->db_database);
-            config()->set('database.connections.mysql.username', $request->db_username);
-            config()->set('database.connections.mysql.password', $dbPassword);
-
-            // 3. Forçar session/cache para file durante instalação (banco ainda não tem tabelas)
-            config()->set('session.driver', 'file');
-            config()->set('cache.default', 'file');
-
-            // 4. Reconectar ao banco
-            DB::purge('mysql');
-            DB::reconnect('mysql');
-
-            // 5. Testar conexão — se falhar, erro claro para o usuário
-            try {
-                DB::connection('mysql')->getPdo();
-            } catch (\Exception $e) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Não foi possível conectar ao banco de dados. Verifique as credenciais. Erro: ' . $e->getMessage(),
-                ], 422);
-            }
-
-            // 6. Executar migrations
-            Artisan::call('migrate', ['--force' => true]);
-
-            // 7. Executar seeders (cria roles, permissões, settings, gateways, etc.)
-            Artisan::call('db:seed', ['--force' => true]);
-
-            // 8. Criar superadmin
-            $admin = \App\Models\Admin::create([
-                'name'     => $request->admin_name,
-                'email'    => $request->admin_email,
-                'password' => Hash::make($request->admin_pass),
-                'status'   => 'active',
-            ]);
-            $admin->assignRole('super-admin');
-
-            // 9. Criar link de storage
-            try {
-                Artisan::call('storage:link');
-            } catch (\Exception $e) {
-                // Pode falhar se link já existe — não é crítico
-            }
-
-            // 10. Atualizar .env com configurações finais (incluindo session/cache para database)
+            // 2. GRAVAR .env PRIMEIRO com todas as credenciais do formulário
+            //    Assim mesmo que falhe algo, o .env já terá os dados corretos
             $this->updateEnv([
                 'APP_NAME'             => '"' . $request->app_name . '"',
                 'APP_ENV'              => 'production',
@@ -112,6 +65,62 @@ class InstallerController extends Controller
                 'DB_DATABASE'          => $request->db_database,
                 'DB_USERNAME'          => $request->db_username,
                 'DB_PASSWORD'          => $dbPassword,
+                'SESSION_DRIVER'       => 'file',
+                'CACHE_STORE'          => 'file',
+                'INSTALLER_ENABLED'    => 'true',
+                'INSTALLED'            => 'false',
+            ]);
+
+            // 3. Configurar conexão MySQL em runtime
+            config()->set('database.default', 'mysql');
+            config()->set('database.connections.mysql.host', $request->db_host);
+            config()->set('database.connections.mysql.port', (int) $request->db_port);
+            config()->set('database.connections.mysql.database', $request->db_database);
+            config()->set('database.connections.mysql.username', $request->db_username);
+            config()->set('database.connections.mysql.password', $dbPassword);
+
+            // 4. Forçar session/cache para file durante instalação
+            config()->set('session.driver', 'file');
+            config()->set('cache.default', 'file');
+
+            // 5. Reconectar ao banco
+            DB::purge('mysql');
+            DB::reconnect('mysql');
+
+            // 6. Testar conexão — se falhar, erro claro (mas .env já foi salvo)
+            try {
+                DB::connection('mysql')->getPdo();
+            } catch (\Exception $e) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Não foi possível conectar ao banco de dados. Verifique as credenciais. Erro: ' . $e->getMessage(),
+                ], 422);
+            }
+
+            // 7. Executar migrations
+            Artisan::call('migrate', ['--force' => true]);
+
+            // 8. Executar seeders (cria roles, permissões, settings, gateways, etc.)
+            Artisan::call('db:seed', ['--force' => true]);
+
+            // 9. Criar superadmin
+            $admin = \App\Models\Admin::create([
+                'name'     => $request->admin_name,
+                'email'    => $request->admin_email,
+                'password' => Hash::make($request->admin_pass),
+                'status'   => 'active',
+            ]);
+            $admin->assignRole('super-admin');
+
+            // 10. Criar link de storage
+            try {
+                Artisan::call('storage:link');
+            } catch (\Exception $e) {
+                // Pode falhar se link já existe — não é crítico
+            }
+
+            // 11. Atualizar .env final (session/cache para database, marcar como instalado)
+            $this->updateEnv([
                 'QUEUE_CONNECTION'     => 'database',
                 'SESSION_DRIVER'       => 'database',
                 'CACHE_STORE'          => 'database',
@@ -119,7 +128,7 @@ class InstallerController extends Controller
                 'INSTALLER_ENABLED'    => 'false',
             ]);
 
-            // 11. Marcar como instalado
+            // 12. Marcar como instalado
             file_put_contents(storage_path('installed'), now()->toDateTimeString());
 
             return response()->json(['success' => true, 'redirect' => url('/admin/entrar')]);

@@ -29,7 +29,11 @@ class ServerController extends Controller
         $server->loadCount('services');
         $healthHistory = ServerHealthLog::where('server_id', $server->id)
             ->orderByDesc('checked_at')->limit(24)->get();
-        return view('admin.servers.show', compact('server', 'healthHistory'));
+        $services = \App\Models\Service::where('server_id', $server->id)
+            ->with('client:id,name,email')
+            ->orderByDesc('created_at')
+            ->get();
+        return view('admin.servers.show', compact('server', 'healthHistory', 'services'));
     }
 
     public function store(Request $request): JsonResponse

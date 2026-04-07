@@ -38,7 +38,13 @@ class InstallerController extends Controller
         ]);
 
         try {
-            // 1. Atualizar .env
+            // 1. Gerar chave da aplicação PRIMEIRO (necessária para criptografia)
+            if (config('app.key') === '' || !str_starts_with(config('app.key'), 'base64:')) {
+                Artisan::call('key:generate', ['--force' => true, '--show' => false]);
+            }
+            $appKey = config('app.key');
+
+            // 2. Atualizar .env com TODAS as configurações
             $this->updateEnv([
                 'APP_NAME'             => '"' . $request->app_name . '"',
                 'APP_ENV'              => 'production',
@@ -48,6 +54,7 @@ class InstallerController extends Controller
                 'APP_LOCALE'           => 'pt_BR',
                 'APP_FALLBACK_LOCALE'  => 'pt_BR',
                 'APP_FAKER_LOCALE'     => 'pt_BR',
+                'APP_KEY'              => $appKey,
                 'DB_CONNECTION'        => 'mysql',
                 'DB_HOST'              => $request->db_host,
                 'DB_PORT'              => $request->db_port,
@@ -61,37 +68,41 @@ class InstallerController extends Controller
                 'INSTALLER_ENABLED'    => 'false',
             ]);
 
-            // 2. Reconectar ao banco
-            config([
-                'database.connections.mysql.host'     => $request->db_host,
-                'database.connections.mysql.port'     => $request->db_port,
-                'database.connections.mysql.database' => $request->db_database,
-                'database.connections.mysql.username' => $request->db_username,
-                'database.connections.mysql.password' => $request->db_password ?? '',
-            ]);
+            // 3. Forçar reload das configurações
+            config()->set('app.key', $appKey);
+            config()->set('database.default', 'mysql');
+            config()->set('database.connections.mysql.host', $request->db_host);
+            config()->set('database.connections.mysql.port', $request->db_port);
+            config()->set('database.connections.mysql.database', $request->db_database);
+            config()->set('database.connections.mysql.username', $request->db_username);
+            config()->set('database.connections.mysql.password', $request->db_password ?? '');
+            
+            // 4. Reconectar ao banco
             DB::purge('mysql');
             DB::reconnect('mysql');
 
-            // 3. Executar migrations
-            Artisan::call('migrate', ['--force' => true, '--seed' => true]);
+            // 5. Testar conexão antes de migrar
+            DB::connection('mysql')->getPdo();
 
-            // 4. Criar admin
-            \App\Models\Admin::create([
+            // 6. Executar migrations
+            Artisan::call('migrate', ['--force' => true]);
+
+            // 7. Executar seeders
+            Artisan::call('db:seed', ['--force' => true]);
+
+            // 8. Criar admin
+            $admin = \App\Models\Admin::create([
                 'name'     => $request->admin_name,
                 'email'    => $request->admin_email,
                 'password' => Hash::make($request->admin_pass),
                 'status'   => 'active',
-            ])->assignRole('super-admin');
+            ]);
+            $admin->assignRole('super-admin');
 
-            // 5. Gerar chave da aplicação se necessário
-            if (config('app.key') === '' || str_contains(config('app.key'), 'base64:') === false) {
-                Artisan::call('key:generate', ['--force' => true]);
-            }
-
-            // 6. Criar link de storage
+            // 9. Criar link de storage
             Artisan::call('storage:link');
 
-            // 7. Marcar como instalado
+            // 10. Marcar como instalado
             file_put_contents(storage_path('installed'), now()->toDateTimeString());
 
             return response()->json(['success' => true, 'redirect' => url('/admin/entrar')]);
@@ -138,11 +149,11 @@ class InstallerController extends Controller
         foreach ($data as $key => $value) {
             // Escapar caracteres especiais para regex
             $escapedKey = preg_quote($key, '/');
-            $pattern = "/^{$escapedKey}=.*/m";
+            $pattern = "/^{$escapedKey}=[^\\r\\n]*/m";
             
-            // Valor pode precisar de aspas se tiver espaços
-            if (str_contains($value, ' ') || str_contains($value, '#')) {
-                $value = '"' . $value . '"';
+            // Valor deve ter aspas se tiver espaços, #, ou caracteres especiais
+            if (preg_match('/[\s#"\\'\\$]/', $value) && !preg_match('/^".*"$/', $value)) {
+                $value = '"' . addcslashes($value, '"\\') . '"';
             }
             
             $replace = "{$key}={$value}";
@@ -152,6 +163,12 @@ class InstallerController extends Controller
                 $env .= "\n{$replace}";
             }
         }
-        file_put_contents($envFile, $env);
+        
+        file_put_contents($envFile, $env, LOCK_EX);
+        
+        // Forçar reload do .env
+        if (function_exists('opcache_reset')) {
+            opcache_reset();
+        }
     }
 }

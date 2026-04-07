@@ -113,7 +113,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ route('admin.orders.index') }}" class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
+                        <a href="{{ Route::has('admin.orders.index') ? route('admin.orders.index') : '#' }}" class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active' : '' }}">
                             <i class="nav-icon bi bi-cart3"></i><p>Pedidos</p>
                         </a>
                     </li>

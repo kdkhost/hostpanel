@@ -395,7 +395,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::put('/{affiliate}',               [Admin\AffiliateController::class, 'updateAffiliate'])->name('update');
         });
 
-        // WhatsApp (Evolution API) — teste de conexão
+        // WhatsApp (Evolution API) — salvar e testar conexão
+        Route::post('configuracoes/whatsapp/salvar', [\App\Http\Controllers\Admin\SettingController::class, 'saveWhatsApp'])
+            ->name('settings.whatsapp.save');
         Route::post('configuracoes/whatsapp/testar', [\App\Http\Controllers\Admin\SettingController::class, 'testWhatsApp'])
             ->name('settings.whatsapp.test');
 

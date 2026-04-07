@@ -107,6 +107,23 @@ class SettingController extends Controller
         return response()->json(['message' => 'Configurações salvas com sucesso!']);
     }
 
+    public function saveWhatsApp(Request $request): JsonResponse
+    {
+        $request->validate([
+            'url'      => 'nullable|string|max:255',
+            'api_key'  => 'nullable|string|max:255',
+            'instance' => 'nullable|string|max:100',
+            'enabled'  => 'nullable|boolean',
+        ]);
+
+        Setting::setEncrypted('integration.whatsapp.url', rtrim($request->input('url', ''), '/'), 'integrations');
+        Setting::setEncrypted('integration.whatsapp.api_key', $request->input('api_key', ''), 'integrations');
+        Setting::setEncrypted('integration.whatsapp.instance', $request->input('instance', ''), 'integrations');
+        Setting::set('modules.whatsapp', $request->boolean('enabled') ? '1' : '0', 'modules');
+
+        return response()->json(['message' => 'Configurações do WhatsApp salvas!']);
+    }
+
     public function testWhatsApp(Request $request): JsonResponse
     {
         $url      = rtrim($request->input('url',      Setting::get('integration.whatsapp.url', '')), '/');

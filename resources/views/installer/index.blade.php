@@ -28,6 +28,7 @@
     </style>
 </head>
 <body>
+<form autocomplete="off" onsubmit="return false;">
 <div class="installer-card" x-data="installer()">
     <div class="installer-header">
         <i class="bi bi-server fs-1"></i>
@@ -80,11 +81,11 @@
         <div x-show="step === 1">
             <h5 class="fw-bold mb-3"><i class="bi bi-database me-2"></i>Configuração do Banco de Dados</h5>
             <div class="row g-3 mb-4">
-                <div class="col-md-8"><label class="form-label fw-semibold">Host *</label><input type="text" class="form-control" x-model="form.db_host" placeholder="localhost"></div>
-                <div class="col-md-4"><label class="form-label fw-semibold">Porta *</label><input type="number" class="form-control" x-model="form.db_port" value="3306"></div>
-                <div class="col-12"><label class="form-label fw-semibold">Nome do Banco *</label><input type="text" class="form-control" x-model="form.db_database" placeholder="hostpanel"></div>
-                <div class="col-md-6"><label class="form-label fw-semibold">Usuário *</label><input type="text" class="form-control" x-model="form.db_username" placeholder="root" autocomplete="off"></div>
-                <div class="col-md-6"><label class="form-label fw-semibold">Senha</label><input type="text" class="form-control" x-model="form.db_password" placeholder="(deixe em branco se não houver)" autocomplete="off" style="-webkit-text-security: disc;"></div>
+                <div class="col-md-8"><label class="form-label fw-semibold">Host *</label><input type="text" class="form-control" x-model="form.db_host" placeholder="localhost" autocomplete="off" name="hp_dbhost"></div>
+                <div class="col-md-4"><label class="form-label fw-semibold">Porta *</label><input type="number" class="form-control" x-model="form.db_port" value="3306" autocomplete="off" name="hp_dbport"></div>
+                <div class="col-12"><label class="form-label fw-semibold">Nome do Banco *</label><input type="text" class="form-control" x-model="form.db_database" placeholder="hostpanel" autocomplete="off" name="hp_dbname"></div>
+                <div class="col-md-6"><label class="form-label fw-semibold">Usuário *</label><input type="text" class="form-control" x-model="form.db_username" placeholder="root" autocomplete="off" name="hp_dbuser"></div>
+                <div class="col-md-6"><label class="form-label fw-semibold">Senha do Banco *</label><input type="text" class="form-control" x-model="form.db_password" placeholder="Senha do banco de dados" autocomplete="off" name="hp_dbpass" style="-webkit-text-security: disc;"></div>
             </div>
             <div class="d-flex gap-2">
                 <button class="btn btn-secondary" @click="step--">← Voltar</button>
@@ -111,8 +112,8 @@
             <div class="row g-3 mb-4">
                 <div class="col-12"><label class="form-label fw-semibold">Nome Completo *</label><input type="text" class="form-control" x-model="form.admin_name" placeholder="Administrador"></div>
                 <div class="col-12"><label class="form-label fw-semibold">E-mail *</label><input type="email" class="form-control" x-model="form.admin_email" placeholder="admin@empresa.com"></div>
-                <div class="col-md-6"><label class="form-label fw-semibold">Senha *</label><input type="password" class="form-control" x-model="form.admin_pass" placeholder="Mín. 8 caracteres"></div>
-                <div class="col-md-6"><label class="form-label fw-semibold">Confirmar Senha *</label><input type="password" class="form-control" x-model="form.admin_pass_confirm" placeholder="Repita a senha"></div>
+                <div class="col-md-6"><label class="form-label fw-semibold">Senha *</label><input type="text" class="form-control" x-model="form.admin_pass" placeholder="Mín. 8 caracteres" autocomplete="new-password" name="hp_adminpass" style="-webkit-text-security: disc;"></div>
+                <div class="col-md-6"><label class="form-label fw-semibold">Confirmar Senha *</label><input type="text" class="form-control" x-model="form.admin_pass_confirm" placeholder="Repita a senha" autocomplete="new-password" name="hp_adminpass2" style="-webkit-text-security: disc;"></div>
             </div>
             <div class="alert alert-warning py-2 small"><i class="bi bi-exclamation-triangle me-1"></i>Anote suas credenciais em local seguro.</div>
             <div class="d-flex gap-2">
@@ -163,6 +164,7 @@
         </div>
     </div>
 </div>
+</form>
 
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script>
@@ -186,16 +188,23 @@ function installer() {
         },
 
         async install() {
+            // Verificar se senha do DB foi preenchida
+            if (!this.form.db_password || this.form.db_password.trim() === '') {
+                this.error = 'Preencha a senha do banco de dados.'; return;
+            }
+            console.log('Enviando dados:', JSON.stringify({...this.form, db_password: '***', admin_pass: '***'}));
+
             this.installing = true; this.installProgress = 10;
             this.installStep = 'Conectando ao banco de dados...';
             await this.sleep(800); this.installProgress = 25;
             this.installStep = 'Executando migrations...';
 
             try {
+                const payload = JSON.parse(JSON.stringify(this.form));
                 const res = await fetch('{{ route("install.run") }}', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
-                    body: JSON.stringify(this.form)
+                    body: JSON.stringify(payload)
                 });
                 this.installProgress = 60; this.installStep = 'Criando dados iniciais...';
                 await this.sleep(1000); this.installProgress = 80;

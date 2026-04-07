@@ -1,0 +1,2 @@
+# Esta pasta contém os assets compilados do Vite (npm run build)
+# Mantida no git para deploy em servidores sem Node.js

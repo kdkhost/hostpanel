@@ -1,0 +1,62 @@
+{
+  "_index-qFyJwsfU.js": {
+    "file": "assets/index-qFyJwsfU.js",
+    "name": "index"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-CVKPkrwt.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/admin/main.js": {
+    "file": "assets/main-DkFzVqzM.js",
+    "name": "main",
+    "src": "resources/js/admin/main.js",
+    "isEntry": true,
+    "imports": [
+      "_index-qFyJwsfU.js"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-D-HZ_ZRM.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "imports": [
+      "_index-qFyJwsfU.js"
+    ]
+  },
+  "resources/js/client/components/BillingChart.jsx": {
+    "file": "assets/BillingChart-TNt2OMDf.js",
+    "name": "BillingChart",
+    "src": "resources/js/client/components/BillingChart.jsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/client/main.jsx",
+      "_index-qFyJwsfU.js"
+    ]
+  },
+  "resources/js/client/components/OrderCheckout.jsx": {
+    "file": "assets/OrderCheckout-CJVwCXI8.js",
+    "name": "OrderCheckout",
+    "src": "resources/js/client/components/OrderCheckout.jsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/client/main.jsx",
+      "_index-qFyJwsfU.js"
+    ]
+  },
+  "resources/js/client/main.jsx": {
+    "file": "assets/main-BHaKoJxe.js",
+    "name": "main",
+    "src": "resources/js/client/main.jsx",
+    "isEntry": true,
+    "imports": [
+      "_index-qFyJwsfU.js"
+    ],
+    "dynamicImports": [
+      "resources/js/client/components/BillingChart.jsx",
+      "resources/js/client/components/OrderCheckout.jsx"
+    ]
+  }
+}

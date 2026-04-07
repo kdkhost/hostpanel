@@ -1,0 +1,7 @@
+import{a as o}from"./index-qFyJwsfU.js";o.defaults.headers.common["X-Requested-With"]="XMLHttpRequest";o.defaults.headers.common.Accept="application/json";const s=document.querySelector('meta[name="csrf-token"]');s&&(o.defaults.headers.common["X-CSRF-TOKEN"]=s.getAttribute("content"));window.AdminHP={axios:o,async confirm(e){return window.confirm(e)},notify(e,t="success"){const i={success:"✅",danger:"❌",warning:"⚠️",info:"ℹ️"},r={success:"#10b981",danger:"#ef4444",warning:"#f59e0b",info:"#3b82f6"},n=document.createElement("div");n.style.cssText=`
+            position: fixed; bottom: 1.25rem; right: 1.25rem; z-index: 9999;
+            background: white; border-left: 4px solid ${r[t]||r.info};
+            box-shadow: 0 10px 25px rgba(0,0,0,.15); border-radius: .75rem;
+            padding: .875rem 1.25rem; max-width: 320px; font-size: .875rem;
+            display: flex; align-items: center; gap: .5rem; animation: slideIn .3s ease;
+        `,n.innerHTML=`<span>${i[t]||""}</span><span>${e}</span>`,document.body.appendChild(n);const a=document.createElement("style");a.textContent="@keyframes slideIn { from { transform: translateX(100%); opacity:0 } to { transform: translateX(0); opacity:1 } }",document.head.appendChild(a),setTimeout(()=>n.remove(),4500)},formatMoney(e,t="BRL"){return new Intl.NumberFormat("pt-BR",{style:"currency",currency:t}).format(e||0)},formatDate(e,t="dd/MM/yyyy"){return e?new Date(e).toLocaleDateString("pt-BR"):"—"},formatDateTime(e){return e?new Date(e).toLocaleString("pt-BR"):"—"}};

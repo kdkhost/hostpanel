@@ -4,7 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Server;
 use App\Models\ServerHealthLog;
-use App\Services\ServerModuleManager;
+use App\Services\ServerModules\ServerModuleManager;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;

@@ -136,7 +136,7 @@ class ServerController extends Controller
     public function testConnectivity(Server $server): JsonResponse
     {
         try {
-            $result = \App\Services\ServerModuleManager::make($server)->testConnection();
+            $result = \App\Services\ServerModules\ServerModuleManager::make($server)->testConnection();
             return response()->json([
                 'success' => $result['success'] ?? true,
                 'message' => $result['message'] ?? 'Conexão estabelecida com sucesso!',

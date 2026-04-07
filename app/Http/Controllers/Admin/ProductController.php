@@ -22,7 +22,8 @@ class ProductController extends Controller
                 ->orderBy($request->sort_by ?? 'sort_order', $request->sort_dir ?? 'asc');
             return response()->json($query->paginate($request->per_page ?? 20));
         }
-        return view('admin.products.index');
+        $groups = ProductGroup::orderBy('sort_order')->get();
+        return view('admin.products.index', compact('groups'));
     }
 
     public function show(Product $product)

@@ -5,16 +5,60 @@ namespace App\Services;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\DB;
 
 class ThemeManager
 {
-    private string $active;
+    private ?string $active = null;
     private string $themesPath;
 
     public function __construct()
     {
         $this->themesPath = resource_path('themes');
-        $this->active     = Setting::get('active_theme', 'default');
+        // Não acessar o banco no construtor - lazy loading
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Get active theme (lazy loading)                                    */
+    /* ------------------------------------------------------------------ */
+
+    public function getActive(): string
+    {
+        if ($this->active === null) {
+            try {
+                // Verificar se estamos na rota de instalação
+                if ($this->isInstallRoute()) {
+                    $this->active = 'default';
+                    return $this->active;
+                }
+
+                // Tentar acessar o banco
+                $this->active = Setting::get('active_theme', 'default');
+            } catch (\Throwable $e) {
+                // Se não conseguir acessar o banco, usar tema padrão
+                $this->active = 'default';
+            }
+        }
+
+        return $this->active;
+    }
+
+    /* ------------------------------------------------------------------ */
+    /*  Check if current request is install route                          */
+    /* ------------------------------------------------------------------ */
+
+    private function isInstallRoute(): bool
+    {
+        try {
+            $request = request();
+            if (!$request) return false;
+            
+            $path = $request->path();
+            return str_starts_with($path, 'install') || 
+                   $request->is('install', 'install/*');
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /* ------------------------------------------------------------------ */
@@ -23,15 +67,15 @@ class ThemeManager
 
     public function boot(): void
     {
-        $viewPath = $this->getViewPath($this->active);
+        $viewPath = $this->getViewPath($this->getActive());
 
         if ($viewPath && is_dir($viewPath)) {
             app('view.finder')->prependLocation($viewPath);
         }
 
         // Compartilha o tema ativo com todas as views
-        view()->share('activeTheme', $this->active);
-        view()->share('themeManifest', $this->getManifest($this->active));
+        view()->share('activeTheme', $this->getActive());
+        view()->share('themeManifest', $this->getManifest($this->getActive()));
     }
 
     /* ------------------------------------------------------------------ */
@@ -64,7 +108,7 @@ class ThemeManager
                     'supports'    => ['store', 'client', 'admin'],
                 ], $manifest, [
                     'id'     => $id,
-                    'active' => $id === $this->active,
+                    'active' => $id === $this->getActive(),
                     'path'   => $dir,
                 ]);
             }
@@ -80,7 +124,7 @@ class ThemeManager
                     'version'     => '1.0.0',
                     'preview'     => null,
                     'supports'    => ['store', 'client', 'admin'],
-                    'active'      => $this->active === 'default',
+                    'active' => $this->getActive() === 'default',
                     'path'        => null,
                 ]);
             }
@@ -92,11 +136,6 @@ class ThemeManager
     /* ------------------------------------------------------------------ */
     /*  Getters                                                             */
     /* ------------------------------------------------------------------ */
-
-    public function getActive(): string
-    {
-        return $this->active;
-    }
 
     public function getManifest(string $themeId): array
     {
@@ -125,12 +164,14 @@ class ThemeManager
 
     public function assetUrl(string $file): string
     {
-        if ($this->active === 'default') {
+        $active = $this->getActive();
+        
+        if ($active === 'default') {
             return asset($file);
         }
 
         return route('theme.asset', [
-            'theme' => $this->active,
+            'theme' => $active,
             'path'  => ltrim($file, '/'),
         ]);
     }

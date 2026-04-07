@@ -83,8 +83,8 @@
                 <div class="col-md-8"><label class="form-label fw-semibold">Host *</label><input type="text" class="form-control" x-model="form.db_host" placeholder="localhost"></div>
                 <div class="col-md-4"><label class="form-label fw-semibold">Porta *</label><input type="number" class="form-control" x-model="form.db_port" value="3306"></div>
                 <div class="col-12"><label class="form-label fw-semibold">Nome do Banco *</label><input type="text" class="form-control" x-model="form.db_database" placeholder="hostpanel"></div>
-                <div class="col-md-6"><label class="form-label fw-semibold">Usuário *</label><input type="text" class="form-control" x-model="form.db_username" placeholder="root"></div>
-                <div class="col-md-6"><label class="form-label fw-semibold">Senha</label><input type="password" class="form-control" x-model="form.db_password" placeholder="(deixe em branco se não houver)"></div>
+                <div class="col-md-6"><label class="form-label fw-semibold">Usuário *</label><input type="text" class="form-control" x-model="form.db_username" placeholder="root" autocomplete="off"></div>
+                <div class="col-md-6"><label class="form-label fw-semibold">Senha</label><input type="text" class="form-control" x-model="form.db_password" placeholder="(deixe em branco se não houver)" autocomplete="off" style="-webkit-text-security: disc;"></div>
             </div>
             <div class="d-flex gap-2">
                 <button class="btn btn-secondary" @click="step--">← Voltar</button>

@@ -84,7 +84,7 @@
                         <div class="d-flex flex-wrap gap-1">
                             <template x-for="v in (selected?.variables ?? [])" :key="v">
                                 <code class="small bg-white border rounded px-2 py-1 cursor-pointer"
-                                      x-text="'{{' + v + '}}'"
+                                      x-text="'{' + v + '}'"
                                       @click="insertVariable(v)"
                                       title="Clique para copiar"></code>
                             </template>
@@ -141,7 +141,7 @@ function emailTemplates() {
 
         selectTemplate(t) {
             this.selected = t;
-            this.form = { subject: t.subject ?? '', body: t.body ?? '', active: !!t.active };
+            this.form = { subject: t.subject ?? '', body: t.body_html ?? '', active: !!t.active };
         },
 
         async saveTemplate() {
@@ -162,13 +162,13 @@ function emailTemplates() {
             const start = ta.selectionStart, end = ta.selectionEnd;
             const before = this.form.body.substring(0, start);
             const after  = this.form.body.substring(end);
-            this.form.body = before + '{{' + v + '}}' + after;
-            this.$nextTick(() => { ta.selectionStart = ta.selectionEnd = start + v.length + 4; ta.focus(); });
+            this.form.body = before + '{' + v + '}' + after;
+            this.$nextTick(() => { ta.selectionStart = ta.selectionEnd = start + v.length + 2; ta.focus(); });
         },
 
         previewTemplate() {
             const frame = document.getElementById('previewFrame');
-            frame.srcdoc = this.form.body.replace(/\{\{(\w+)\}\}/g, (_, k) => `<mark>{{ ${k} }}</mark>`);
+            frame.srcdoc = this.form.body.replace(/\{(\w+)\}/g, (_, key) => `<mark>{${key}}</mark>`);
             new bootstrap.Modal(document.getElementById('previewModal')).show();
         },
 

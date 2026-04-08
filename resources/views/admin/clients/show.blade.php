@@ -209,6 +209,73 @@
             </div>
         </div>
     </div>
+    
+    {{-- Modal Editar Cliente --}}
+    <div class="modal fade" id="editClientModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-semibold">Editar Cliente</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form @submit.prevent="updateClient">
+                    <div class="modal-body row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" x-model="form.name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">E-mail <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" x-model="form.email" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Tipo de Documento</label>
+                            <select class="form-select" x-model="form.document_type">
+                                <option value="cpf">CPF</option>
+                                <option value="cnpj">CNPJ</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Número do Documento</label>
+                            <input type="text" class="form-control" x-model="form.document_number">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Senha (deixe em branco para manter)</label>
+                            <input type="password" class="form-control" x-model="form.password">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Telefone</label>
+                            <input type="text" class="form-control" x-model="form.phone">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">WhatsApp</label>
+                            <input type="text" class="form-control" x-model="form.whatsapp">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Status</label>
+                            <select class="form-select" x-model="form.status">
+                                <option value="active">Ativo</option>
+                                <option value="inactive">Inativo</option>
+                                <option value="pending">Pendente</option>
+                                <option value="blocked">Bloqueado</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-semibold">Notas</label>
+                            <textarea class="form-control" rows="3" x-model="form.notes"></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" :disabled="saving">
+                            <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
+                            Salvar Alterações
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 
@@ -217,9 +284,41 @@
 function adminClientShow() {
     return {
         tab: 'services',
+        saving: false,
+        form: {
+            name: @js($client->name),
+            email: @js($client->email),
+            document_type: @js($client->document_type ?? 'cpf'),
+            document_number: @js($client->document_number),
+            phone: @js($client->phone),
+            whatsapp: @js($client->whatsapp),
+            status: @js($client->status),
+            notes: @js($client->notes),
+            password: ''
+        },
 
         editClient() {
-            window.location.href = '{{ route("admin.clients.edit", $client) }}';
+            new bootstrap.Modal(document.getElementById('editClientModal')).show();
+        },
+
+        async updateClient() {
+            this.saving = true;
+            try {
+                const d = await HostPanel.fetch('{{ route("admin.clients.update", $client) }}', {
+                    method: 'PUT',
+                    body: JSON.stringify(this.form)
+                });
+                if (d.client) {
+                    HostPanel.toast('Cliente atualizado com sucesso!');
+                    window.location.reload();
+                } else {
+                    HostPanel.toast(d.message || 'Erro ao atualizar.', 'danger');
+                }
+            } catch (e) {
+                HostPanel.toast('Ocorreu um erro na requisição.', 'danger');
+            } finally {
+                this.saving = false;
+            }
         },
 
         async changeStatus(status) {
@@ -230,6 +329,12 @@ function adminClientShow() {
             });
             HostPanel.toast(d.message);
             if (d.status) setTimeout(() => window.location.reload(), 1200);
+        },
+
+        init() {
+            @if(session('open_edit'))
+                this.editClient();
+            @endif
         }
     }
 }

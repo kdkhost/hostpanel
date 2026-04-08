@@ -168,7 +168,7 @@ function emailTemplates() {
 
         previewTemplate() {
             const frame = document.getElementById('previewFrame');
-            frame.srcdoc = this.form.body.replace(/\{(\w+)\}/g, (_, key) => `<mark>{${key}}</mark>`);
+            frame.srcdoc = this.form.body.replace(/\{(\w+)\}/g, (_, key) => '<mark>{' + key + '}</mark>');
             new bootstrap.Modal(document.getElementById('previewModal')).show();
         },
 

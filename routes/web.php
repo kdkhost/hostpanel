@@ -206,6 +206,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/',                        [Admin\ClientController::class, 'index'])->name('index');
             Route::post('/',                       [Admin\ClientController::class, 'store'])->name('store');
             Route::get('/{client}',                [Admin\ClientController::class, 'show'])->name('show');
+            Route::get('/{client}/editar',         [Admin\ClientController::class, 'edit'])->name('edit');
             Route::put('/{client}',                [Admin\ClientController::class, 'update'])->name('update');
             Route::delete('/{client}',             [Admin\ClientController::class, 'destroy'])->name('destroy');
             Route::post('/{client}/impersonar',    [Admin\ClientController::class, 'impersonate'])->name('impersonate');

@@ -44,6 +44,11 @@ class ClientController extends Controller
         return view('admin.clients.show', compact('client'));
     }
 
+    public function edit(Client $client)
+    {
+        return redirect()->route('admin.clients.show', $client)->with('open_edit', true);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $request->validate([

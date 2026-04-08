@@ -234,7 +234,7 @@
                         <template x-if="tab !== 'banners'">
                             <div class="col-12">
                                 <label class="form-label fw-semibold" x-text="tab === 'faqs' ? 'Resposta *' : 'Conteudo *'"></label>
-                                <textarea class="form-control" rows="8" x-model="contentField"></textarea>
+                                <textarea class="form-control" rows="8" x-editor="contentField"></textarea>
                             </div>
                         </template>
 

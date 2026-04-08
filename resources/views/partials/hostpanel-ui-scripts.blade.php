@@ -701,11 +701,56 @@
         }
     };
 
+    HostPanel.initEditor = (el, expression, evaluate) => {
+        const $el = $(el);
+        const config = {
+            placeholder: el.placeholder || '',
+            tabsize: 2,
+            height: el.dataset.height || 300,
+            lang: 'pt-BR',
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'underline', 'clear']],
+                ['color', ['color']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['table', ['table']],
+                ['insert', ['link', 'picture']],
+                ['view', ['fullscreen', 'codeview']]
+            ],
+            callbacks: {
+                onChange: function(content) {
+                    evaluate(`${expression} = \`${content.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\``);
+                }
+            }
+        };
+        $el.summernote(config);
+    };
+
     window.HostPanel = HostPanel;
 
     const boot = () => {
         HostPanel.applyMasks(document);
         HostPanel.bindViaCep(document);
+
+        // Registro da diretiva x-editor
+        if (window.Alpine) {
+            window.Alpine.directive('editor', (el, { expression }, { evaluate, effect }) => {
+                const getVal = () => {
+                    let val = '';
+                    evaluate(v => val = v);
+                    return val;
+                };
+
+                HostPanel.initEditor(el, expression, evaluate);
+
+                effect(() => {
+                    const current = getVal();
+                    if ($(el).summernote('code') !== current) {
+                        $(el).summernote('code', current || '');
+                    }
+                });
+            });
+        }
     };
 
     if (document.readyState === 'loading') {

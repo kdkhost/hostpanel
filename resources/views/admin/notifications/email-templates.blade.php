@@ -93,8 +93,8 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Corpo do E-mail (HTML)</label>
-                        <textarea class="form-control font-monospace" rows="18" x-model="form.body" id="templateBody"
-                                  style="font-size:.8rem;resize:vertical"></textarea>
+                        <textarea class="form-control" rows="18" x-editor="form.body" id="templateBody"
+                                  style="resize:vertical"></textarea>
                     </div>
                 </div>
             </div>

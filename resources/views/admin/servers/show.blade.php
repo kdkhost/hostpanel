@@ -31,7 +31,10 @@
                         <div class="text-muted small">{{ $server->ip_address }} &mdash; Módulo: <strong>{{ strtoupper($server->module ?? $server->type) }}</strong></div>
                     </div>
                 </div>
-                <div class="d-flex align-items-center gap-2">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="form-check form-switch mb-0" title="Ativar/Desativar Servidor">
+                        <input class="form-check-input" type="checkbox" :checked="!!{{ $server->active ? 'true' : 'false' }}" @change="toggleActive()">
+                    </div>
                     <span class="badge rounded-pill small"
                           :class="health?.network_status === 'online' ? 'bg-success' : (health?.network_status === 'degraded' ? 'bg-warning text-dark' : (health?.network_status === 'unknown' ? 'bg-secondary' : 'bg-danger'))"
                           x-text="{'online':'Operacional','degraded':'Degradado','offline':'Offline','unknown':'Pendente'}[health?.network_status] ?? 'Verificando...'"></span>
@@ -529,6 +532,19 @@ function serverShow() {
         async testConnection() {
             const d = await HostPanel.fetch('{{ route("admin.servers.test", $server) }}', { method: 'POST' });
             HostPanel.toast(d.message, d.success ? 'success' : 'danger');
+        },
+
+        async toggleActive() {
+            try {
+                const d = await HostPanel.fetch('{{ route("admin.servers.status", $server) }}', { method: 'POST' });
+                if (d.ok) {
+                    HostPanel.toast(d.message || 'Status atualizado!');
+                } else {
+                    HostPanel.toast(d.message || 'Erro ao atualizar status', 'danger');
+                }
+            } catch (e) {
+                HostPanel.toast('Erro na conexão.', 'danger');
+            }
         },
 
         editModal() {

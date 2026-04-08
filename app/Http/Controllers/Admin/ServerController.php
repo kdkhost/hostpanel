@@ -254,6 +254,19 @@ class ServerController extends Controller
         }
     }
 
+    public function toggleStatus(Server $server): JsonResponse
+    {
+        $server->update([
+            'active' => !$server->active,
+        ]);
+
+        return response()->json([
+            'message' => $server->active ? 'Servidor ativado com sucesso!' : 'Servidor desativado com sucesso!',
+            'active' => (bool) $server->active,
+            'server' => $server->fresh(['group', 'latestHealthLog']),
+        ]);
+    }
+
     public function groups(): JsonResponse
     {
         return response()->json(ServerGroup::withCount('servers')->get());

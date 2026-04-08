@@ -49,7 +49,12 @@
                                 <small class="text-muted d-block" x-text="server.hostname"></small>
                                 <small class="text-muted" x-text="`Ultima verificacao: ${lastCheckLabel(server)}`"></small>
                             </div>
-                            <span class="badge" :class="statusBadgeClass(server)" x-text="statusLabel(server)"></span>
+                            <div class="d-flex flex-column align-items-end gap-1">
+                                <span class="badge" :class="statusBadgeClass(server)" x-text="statusLabel(server)"></span>
+                                <div class="form-check form-switch" title="Ativar/Desativar Servidor">
+                                    <input class="form-check-input" type="checkbox" :checked="!!server.active" @change="toggleActive(server)">
+                                </div>
+                            </div>
                         </div>
 
                         <div class="row g-2 mb-3 text-center">
@@ -463,6 +468,47 @@ function serversTable() {
         async testConn(server) {
             const data = await HostPanel.fetch(`/admin/servidores/${server.id}/testar`, { method: 'POST' });
             HostPanel.toast(data.message, data.success ? 'success' : 'danger');
+        },
+
+        async toggleActive(server) {
+            const isDeactivating = !!server.active;
+            
+            if (isDeactivating && server.services_count > 0) {
+                const result = await Swal.fire({
+                    title: 'Tem certeza?',
+                    text: `Este servidor possui ${server.services_count} contas ativas. Ao desativá-lo, novas contas não serão provisionadas aqui, mas as atuais continuarão funcionando.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Sim, desativar',
+                    cancelButtonText: 'Cancelar',
+                    confirmButtonColor: '#d33',
+                    reverseButtons: true
+                });
+
+                if (!result.isConfirmed) {
+                    this.load(); // Reset switch
+                    return;
+                }
+            }
+
+            try {
+                const data = await HostPanel.fetch(`/admin/servidores/${server.id}/status`, { method: 'POST' });
+                if (data.ok) {
+                    HostPanel.toast(data.message || 'Status atualizado!');
+                    // Atualiza localmente para feedback imediato
+                    server.active = data.active;
+                    if (data.server) {
+                        const idx = this.servers.findIndex(s => s.id === server.id);
+                        if (idx !== -1) this.servers[idx] = data.server;
+                    }
+                } else {
+                    HostPanel.toast(data.message || 'Erro ao atualizar status', 'danger');
+                    this.load();
+                }
+            } catch (e) {
+                HostPanel.toast('Erro na conexão.', 'danger');
+                this.load();
+            }
         },
 
         async saveServer() {

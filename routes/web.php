@@ -271,6 +271,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/{server}/health-check',  [Admin\ServerController::class, 'healthCheck'])->name('health.check');
             Route::get('/{server}/health-status',  [Admin\ServerController::class, 'healthStatus'])->name('health.status');
             Route::get('/{server}/health-history', [Admin\ServerController::class, 'healthHistory'])->name('health.history');
+            Route::post('/{server}/status',        [Admin\ServerController::class, 'toggleStatus'])->name('status');
             Route::post('/{server}/testar',        [Admin\ServerController::class, 'testConnectivity'])->name('test');
         });
 
@@ -282,6 +283,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/grupos',         [Admin\ProductController::class, 'storeGroup'])->name('groups.store');
             Route::get('/{product}',       [Admin\ProductController::class, 'show'])->name('show');
             Route::put('/{product}',       [Admin\ProductController::class, 'update'])->name('update');
+            Route::post('/{product}/status', [Admin\ProductController::class, 'toggleStatus'])->name('status');
             Route::delete('/{product}',   [Admin\ProductController::class, 'destroy'])->name('destroy');
         });
 

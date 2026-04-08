@@ -59,4 +59,9 @@ abstract class AbstractServerModule implements ServerModuleInterface
         }
         return $username ?: 'usr' . rand(1000, 9999);
     }
+
+    public function getServerStats(): array
+    {
+        return [];
+    }
 }

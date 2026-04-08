@@ -430,6 +430,14 @@
                         <label class="form-label">Max. contas</label>
                         <input type="number" class="form-control" x-model="editForm.max_accounts" min="0">
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small">Datacenter</label>
+                        <input type="text" class="form-control" x-model="editForm.datacenter">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small">Localizacao</label>
+                        <input type="text" class="form-control" x-model="editForm.location">
+                    </div>
                     <div class="col-md-4">
                         <label class="form-label">NS primario</label>
                         <input type="text" class="form-control" x-model="editForm.nameserver1">
@@ -497,6 +505,8 @@ function serverShow() {
             nameserver1: @js($server->nameserver1),
             nameserver2: @js($server->nameserver2),
             nameserver3: @js($server->nameserver3),
+            datacenter: @js($server->datacenter),
+            location: @js($server->location),
             active: {{ $server->active ? 'true' : 'false' }},
             secure: {{ $server->secure ? 'true' : 'false' }},
         },

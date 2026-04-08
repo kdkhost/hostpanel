@@ -17,15 +17,9 @@ Artisan::command('inspire', function () {
 | HostPanel Scheduled Tasks
 |--------------------------------------------------------------------------
 */
-Schedule::call(function () {
-    GenerateInvoicesJob::dispatchSync();
-})->dailyAt('08:00')->name('generate-invoices')->withoutOverlapping();
-Schedule::call(function () {
-    SuspendOverdueServicesJob::dispatchSync();
-})->dailyAt('09:00')->name('suspend-overdue')->withoutOverlapping();
-Schedule::call(function () {
-    ServerHealthCheckJob::dispatchSync();
-})->everyFiveMinutes()->name('server-health-check')->withoutOverlapping();
+Schedule::job(new \App\Jobs\GenerateInvoicesJob)->dailyAt('08:00')->withoutOverlapping();
+Schedule::job(new \App\Jobs\SuspendOverdueServicesJob)->dailyAt('09:00')->withoutOverlapping();
+Schedule::job(new \App\Jobs\ServerHealthCheckJob)->everyFiveMinutes()->withoutOverlapping(10);
 
 // Aplicar multas e juros em faturas vencidas
 Schedule::call(function () {

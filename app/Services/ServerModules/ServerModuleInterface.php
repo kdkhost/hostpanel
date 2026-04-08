@@ -32,4 +32,7 @@ interface ServerModuleInterface
 
     /** Testa conectividade com o servidor (ping à API) */
     public function testConnection(): bool;
+
+    /** Retorna métricas globais de saúde do servidor (CPU, RAM, Disco, Load) */
+    public function getServerStats(): array;
 }

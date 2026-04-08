@@ -37,11 +37,14 @@ class ServerHealthCheckJob implements ShouldQueue
 
         try {
             $module = ServerModuleManager::make($server);
-            $stats  = $module->getUsageStats($this->makeServiceStub($server));
+            $stats  = $module->getServerStats();
 
             $cpuUsage  = $stats['cpu_usage'] ?? null;
-            $ramUsage  = $stats['memory_usage'] ?? null;
+            $ramUsage  = $stats['ram_usage'] ?? null;
             $diskUsage = $stats['disk_usage'] ?? null;
+            $load1     = $stats['load_avg_1'] ?? null;
+            $load5     = $stats['load_avg_5'] ?? null;
+            $load15    = $stats['load_avg_15'] ?? null;
 
             // Normalizar para porcentagem (0-100)
             if ($cpuUsage !== null && $cpuUsage > 100) {
@@ -53,7 +56,10 @@ class ServerHealthCheckJob implements ShouldQueue
                 'cpu_usage'       => $cpuUsage,
                 'ram_usage'       => $ramUsage,
                 'disk_usage'      => $diskUsage,
-                'account_count'   => $server->current_accounts,
+                'load_avg_1'      => $load1,
+                'load_avg_5'      => $load5,
+                'load_avg_15'     => $load15,
+                'account_count'   => $stats['account_count'] ?? $server->current_accounts,
                 'status'          => $network['online'] ? 'online' : 'offline',
                 'latency_ms'      => $network['latency_ms'],
                 'packet_loss_pct' => $network['packet_loss_pct'],
@@ -63,8 +69,10 @@ class ServerHealthCheckJob implements ShouldQueue
             ]);
 
             $server->update([
-                'status'       => $network['online'] ? 'online' : 'offline',
-                'last_check_at'=> now(),
+                'status'         => $network['online'] ? 'online' : 'offline',
+                'last_check_at'  => now(),
+                'cpanel_version' => $stats['cpanel_version'] ?? $server->cpanel_version,
+                'current_accounts' => $stats['account_count'] ?? $server->current_accounts,
             ]);
 
         } catch (\Exception $e) {
@@ -121,12 +129,5 @@ class ServerHealthCheckJob implements ShouldQueue
         return 'online';
     }
 
-    protected function makeServiceStub(Server $server): \App\Models\Service
-    {
-        $service = new \App\Models\Service();
-        $service->server_id = $server->id;
-        $service->setRelation('server', $server);
-        return $service;
-    }
 }
 

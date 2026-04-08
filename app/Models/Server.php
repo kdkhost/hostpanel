@@ -12,6 +12,7 @@ class Server extends Model
 
     protected $fillable = [
         'server_group_id', 'name', 'hostname', 'ip_address', 'ip_address_secondary', 'port',
+        'datacenter', 'location',
         'type', 'module', 'username', 'api_key', 'api_hash', 'password',
         'max_accounts', 'current_accounts', 'secure', 'active', 'status', 'last_check_at',
         'os_name', 'os_version', 'kernel', 'cpanel_version', 'php_version_default',

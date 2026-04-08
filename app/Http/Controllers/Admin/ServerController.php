@@ -52,6 +52,9 @@ class ServerController extends Controller
             'nameserver1' => 'nullable|string|max:255',
             'nameserver2' => 'nullable|string|max:255',
             'nameserver3' => 'nullable|string|max:255',
+            'datacenter'  => 'nullable|string|max:100',
+            'location'    => 'nullable|string|max:100',
+            'api_hash'    => 'nullable|string',
         ];
     }
 
@@ -94,6 +97,7 @@ class ServerController extends Controller
             'server_group_id', 'name', 'hostname', 'ip_address', 'ip_address_secondary',
             'port', 'type', 'module', 'username', 'api_key', 'api_hash', 'password', 'max_accounts',
             'secure', 'active', 'nameserver1', 'nameserver2', 'nameserver3',
+            'datacenter', 'location',
         ]);
 
         $data['module'] = $this->normalizeModule($data['module'] ?? null);
@@ -124,7 +128,7 @@ class ServerController extends Controller
         $data = $request->only([
             'server_group_id', 'name', 'hostname', 'ip_address', 'ip_address_secondary',
             'port', 'type', 'module', 'username', 'max_accounts', 'secure', 'active',
-            'nameserver1', 'nameserver2', 'nameserver3',
+            'nameserver1', 'nameserver2', 'nameserver3', 'datacenter', 'location',
         ]);
 
         $data['module'] = $this->normalizeModule($data['module'] ?? null);
@@ -142,6 +146,10 @@ class ServerController extends Controller
             $data['password'] = null;
         } elseif ($request->filled('password')) {
             $data['password'] = $request->input('password');
+        }
+
+        if ($request->filled('api_hash')) {
+            $data['api_hash'] = $request->input('api_hash');
         }
 
         $server->update($data);

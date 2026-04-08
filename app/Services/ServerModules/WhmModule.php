@@ -129,4 +129,9 @@ class WhmModule extends AbstractServerModule
             return false;
         }
     }
+
+    public function getServerStats(): array
+    {
+        return $this->whm->getServerHealth();
+    }
 }

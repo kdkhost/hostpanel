@@ -193,15 +193,25 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">API Key <span x-show="requiresApiKey()">*</span></label>
-                            <input type="text" class="form-control" x-model="serverForm.api_key" :placeholder="editingId ? 'Preencha apenas para alterar' : ''" :required="requiresApiKey() && !editingId">
+                            <input type="password" class="form-control" x-model="serverForm.api_key" 
+                                   :placeholder="editingId ? '******** (Salvo - deixe em branco para manter)' : 'Chave API'">
                         </div>
                         <div class="col-md-6" x-show="requiresPassword()">
                             <label class="form-label">Senha <span x-show="requiresPassword()">*</span></label>
-                            <input type="password" class="form-control" x-model="serverForm.password" :placeholder="editingId ? 'Preencha apenas para alterar' : ''" :required="requiresPassword() && !editingId">
+                            <input type="password" class="form-control" x-model="serverForm.password"
+                                   :placeholder="editingId ? '******** (Salvo - deixe em branco para manter)' : 'Senha'">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Max. contas</label>
                             <input type="number" class="form-control" x-model="serverForm.max_accounts" min="0">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Datacenter</label>
+                            <input type="text" class="form-control" x-model="serverForm.datacenter">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Localizacao</label>
+                            <input type="text" class="form-control" x-model="serverForm.location">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">NS primario</label>
@@ -274,6 +284,9 @@ function serversTable() {
                 nameserver1: '',
                 nameserver2: '',
                 nameserver3: '',
+                datacenter: '',
+                location: '',
+                api_hash: '',
                 active: true,
                 secure: true,
             };
@@ -446,6 +459,8 @@ function serversTable() {
                 nameserver1: server.nameserver1 || '',
                 nameserver2: server.nameserver2 || '',
                 nameserver3: server.nameserver3 || '',
+                datacenter: server.datacenter || '',
+                location: server.location || '',
                 active: !!server.active,
                 secure: !!server.secure,
             };

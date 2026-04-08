@@ -275,9 +275,15 @@ class ServerController extends Controller
         ]);
     }
 
-    public function groups(): JsonResponse
+    public function groups(Request $request)
     {
-        return response()->json(ServerGroup::withCount('servers')->get());
+        $groups = ServerGroup::withCount('servers')->get();
+
+        if ($request->wantsJson()) {
+            return response()->json($groups);
+        }
+
+        return view('admin.servers.groups', compact('groups'));
     }
 
     public function storeGroup(Request $request): JsonResponse
@@ -290,5 +296,30 @@ class ServerController extends Controller
         $group = ServerGroup::create($request->only(['name', 'description', 'fill_type', 'active']));
 
         return response()->json(['message' => 'Grupo criado!', 'group' => $group], 201);
+    }
+
+    public function updateGroup(Request $request, ServerGroup $group): JsonResponse
+    {
+        $request->validate([
+            'name' => 'required|string|max:100',
+            'fill_type' => 'required|in:sequential,least_used,random',
+        ]);
+
+        $group->update($request->only(['name', 'description', 'fill_type', 'active']));
+
+        return response()->json(['message' => 'Grupo atualizado!', 'group' => $group]);
+    }
+
+    public function destroyGroup(ServerGroup $group): JsonResponse
+    {
+        if ($group->servers()->count() > 0) {
+            return response()->json([
+                'message' => 'Nao e possivel remover um grupo que possui servidores vinculados.',
+            ], 422);
+        }
+
+        $group->delete();
+
+        return response()->json(['message' => 'Grupo removido com sucesso!']);
     }
 }

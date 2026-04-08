@@ -266,6 +266,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/',                       [Admin\ServerController::class, 'store'])->name('store');
             Route::get('/grupos',                  [Admin\ServerController::class, 'groups'])->name('groups');
             Route::post('/grupos',                 [Admin\ServerController::class, 'storeGroup'])->name('groups.store');
+            Route::put('/grupos/{group}',          [Admin\ServerController::class, 'updateGroup'])->name('groups.update');
+            Route::delete('/grupos/{group}',       [Admin\ServerController::class, 'destroyGroup'])->name('groups.destroy');
             Route::get('/{server}',                [Admin\ServerController::class, 'show'])->name('show');
             Route::put('/{server}',                [Admin\ServerController::class, 'update'])->name('update');
             Route::delete('/{server}',             [Admin\ServerController::class, 'destroy'])->name('destroy');

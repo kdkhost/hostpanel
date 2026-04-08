@@ -420,11 +420,13 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">API Key <span x-show="requiresApiKey()">*</span></label>
-                        <input type="text" class="form-control" x-model="editForm.api_key" placeholder="Preencha apenas para alterar" :required="requiresApiKey() && !hasStoredApiKey">
+                        <input type="password" class="form-control" x-model="editForm.api_key" 
+                               placeholder="{{ $server->api_key ? '******** (Chave salva - deixe vazio para manter)' : 'Insira a chave API' }}">
                     </div>
                     <div class="col-md-6" x-show="requiresPassword()">
                         <label class="form-label">Senha <span x-show="requiresPassword()">*</span></label>
-                        <input type="password" class="form-control" x-model="editForm.password" placeholder="Preencha apenas para alterar" :required="requiresPassword() && !hasStoredPassword">
+                        <input type="password" class="form-control" x-model="editForm.password"
+                               placeholder="{{ $server->password ? '******** (Senha salva - deixe vazio para manter)' : 'Insira a senha' }}">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Max. contas</label>
@@ -507,8 +509,13 @@ function serverShow() {
             nameserver3: @js($server->nameserver3),
             datacenter: @js($server->datacenter),
             location: @js($server->location),
+            hasStoredApiKey: {{ $server->api_key ? 'true' : 'false' }},
+            hasStoredPassword: {{ $server->password ? 'true' : 'false' }},
             active: {{ $server->active ? 'true' : 'false' }},
             secure: {{ $server->secure ? 'true' : 'false' }},
+            api_key: '',
+            password: '',
+            api_hash: '',
         },
         search: '',
         chartTab: 'load',
@@ -622,6 +629,10 @@ function serverShow() {
         },
 
         editServer() {
+            // Garantir que o formulário resete para os valores do servidor ao abrir
+            this.editForm.api_key = '';
+            this.editForm.password = '';
+            this.editForm.api_hash = '';
             this.editModal().show();
         },
 

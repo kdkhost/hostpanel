@@ -263,8 +263,13 @@
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
-                                <a href="{{ route('admin.servers.index') }}" class="nav-link {{ request()->routeIs('admin.servers.*') ? 'active' : '' }}">
+                                <a href="{{ route('admin.servers.index') }}" class="nav-link {{ request()->routeIs('admin.servers.index', 'admin.servers.show') ? 'active' : '' }}">
                                     <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Servidores</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.servers.groups') }}" class="nav-link {{ request()->routeIs('admin.servers.groups') ? 'active' : '' }}">
+                                    <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Grupos de Servidores</p>
                                 </a>
                             </li>
                             <li class="nav-item">

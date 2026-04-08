@@ -160,19 +160,25 @@
                             <label class="form-label">Modulo</label>
                             <select class="form-select" x-model="serverForm.module" @change="applyModuleDefaults()">
                                 <option value="whm">WHM/cPanel</option>
+                                <option value="whmsonic">WHMSonic</option>
                                 <option value="cpanel">cPanel</option>
                                 <option value="aapanel">AAPanel</option>
                                 <option value="btpanel">BT Panel</option>
                                 <option value="plesk">Plesk</option>
                                 <option value="directadmin">DirectAdmin</option>
                                 <option value="ispconfig">ISPConfig</option>
+                                <option value="blesta">Blesta</option>
+                                <option value="cyberpanel">CyberPanel</option>
+                                <option value="webuzo">Webuzo</option>
+                                <option value="hestia">HestiaCP</option>
+                                <option value="virtualmin">Virtualmin</option>
                                 <option value="none">Nenhum</option>
                             </select>
                         </div>
 
-                        <div class="col-12" x-show="usesAaPanel()">
+                        <div class="col-12" x-show="moduleHelpText()">
                             <div class="alert alert-info py-2 small mb-0">
-                                Use a API Key do painel. Para BT Panel, o sistema salva internamente como compatibilidade de AAPanel.
+                                <span x-text="moduleHelpText()"></span>
                             </div>
                         </div>
 
@@ -183,6 +189,10 @@
                         <div class="col-md-6">
                             <label class="form-label">API Key <span x-show="requiresApiKey()">*</span></label>
                             <input type="text" class="form-control" x-model="serverForm.api_key" :placeholder="editingId ? 'Preencha apenas para alterar' : ''" :required="requiresApiKey() && !editingId">
+                        </div>
+                        <div class="col-md-6" x-show="requiresPassword()">
+                            <label class="form-label">Senha <span x-show="requiresPassword()">*</span></label>
+                            <input type="password" class="form-control" x-model="serverForm.password" :placeholder="editingId ? 'Preencha apenas para alterar' : ''" :required="requiresPassword() && !editingId">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Max. contas</label>
@@ -240,6 +250,7 @@ function serversTable() {
         saving: false,
         editingId: null,
         serverForm: {},
+        moduleCatalog: @js(\App\Services\ServerModules\ServerModuleManager::catalog()),
 
         resetForm() {
             this.editingId = null;
@@ -253,6 +264,7 @@ function serversTable() {
                 module: 'whm',
                 username: '',
                 api_key: '',
+                password: '',
                 max_accounts: 500,
                 nameserver1: '',
                 nameserver2: '',
@@ -267,20 +279,11 @@ function serversTable() {
         },
 
         normalizeModule(module) {
-            return module === 'btpanel' ? 'aapanel' : module;
+            return String(module || 'none').toLowerCase().trim() || 'none';
         },
 
         moduleLabel(module) {
-            return {
-                whm: 'WHM/cPanel',
-                cpanel: 'cPanel',
-                aapanel: 'AAPanel',
-                btpanel: 'BT Panel',
-                plesk: 'Plesk',
-                directadmin: 'DirectAdmin',
-                ispconfig: 'ISPConfig',
-                none: 'Nenhum',
-            }[module] || module;
+            return this.moduleCatalog[this.normalizeModule(module)]?.label || module;
         },
 
         statusKey(server) {
@@ -358,25 +361,61 @@ function serversTable() {
         },
 
         requiresUsername() {
-            return ['whm', 'cpanel', 'plesk', 'directadmin', 'ispconfig'].includes(this.serverForm.module);
+            return !!this.moduleCatalog[this.normalizeModule(this.serverForm.module)]?.requires_username;
         },
 
         requiresApiKey() {
-            return this.serverForm.module !== 'none';
+            return !!this.moduleCatalog[this.normalizeModule(this.serverForm.module)]?.requires_api_key;
+        },
+
+        requiresPassword() {
+            return !!this.moduleCatalog[this.normalizeModule(this.serverForm.module)]?.requires_password;
         },
 
         usesAaPanel() {
-            return ['aapanel', 'btpanel'].includes(this.serverForm.module);
+            return ['aapanel', 'btpanel'].includes(this.normalizeModule(this.serverForm.module));
+        },
+
+        moduleHelpText() {
+            if (this.usesAaPanel()) {
+                return 'Use a API Key do painel. Para BT Panel, o sistema usa a mesma integracao do AAPanel.';
+            }
+
+            if (this.requiresApiKey() && this.requiresUsername()) {
+                return 'Este modulo usa usuario e API Key/token para validar conexao e operacoes automaticas.';
+            }
+
+            if (this.requiresUsername() && this.requiresPassword()) {
+                return 'Este modulo trabalha com usuario e senha do painel. A senha pode ficar em branco na edicao para manter a atual.';
+            }
+
+            if (this.requiresApiKey()) {
+                return 'Preencha a API Key ou token do painel para habilitar os testes de conectividade.';
+            }
+
+            return '';
         },
 
         applyModuleDefaults() {
-            if (this.usesAaPanel() && (!this.serverForm.port || this.serverForm.port === 2087)) {
-                this.serverForm.port = 8888;
+            const defaultPort = Number(this.moduleCatalog[this.normalizeModule(this.serverForm.module)]?.default_port || 2087);
+            const knownPorts = Object.values(this.moduleCatalog)
+                .map((definition) => Number(definition.default_port || 0))
+                .filter((port) => port > 0);
+
+            if (!this.serverForm.port || knownPorts.includes(Number(this.serverForm.port))) {
+                this.serverForm.port = defaultPort;
             }
 
-            if (this.serverForm.module === 'none') {
+            if (!this.requiresUsername()) {
                 this.serverForm.username = '';
+            }
+
+            if (!this.requiresApiKey()) {
                 this.serverForm.api_key = '';
+            }
+
+            if (!this.requiresPassword()) {
+                this.serverForm.password = '';
             }
         },
 
@@ -397,6 +436,7 @@ function serversTable() {
                 module: server.module || 'whm',
                 username: server.username || '',
                 api_key: '',
+                password: '',
                 max_accounts: server.max_accounts ?? 0,
                 nameserver1: server.nameserver1 || '',
                 nameserver2: server.nameserver2 || '',

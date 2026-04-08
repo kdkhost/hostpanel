@@ -94,10 +94,10 @@ class AutoLoginController extends Controller
 
             // Enviar por WhatsApp
             if ($client->phone && $client->whatsapp_enabled) {
-                $panelName = match ($service->server?->module) {
-                    'aapanel', 'btpanel' => 'AAPanel',
-                    default              => 'cPanel',
-                };
+                $panelName = \App\Services\ServerModules\ServerModuleManager::panelLabel(
+                    $service->server?->module,
+                    'Painel'
+                );
                 $msg  = "🔐 *Link de Acesso ao Painel*\n";
                 $msg .= "Serviço: *" . ($service->domain ?? $service->product?->name) . "*\n";
                 $msg .= "Painel: *{$panelName}*\n";

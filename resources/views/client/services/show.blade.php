@@ -154,8 +154,13 @@
                     <a href="{{ route('client.services.autologin', $service) }}" target="_blank"
                        class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2 rounded-lg">
                         <i class="bi bi-box-arrow-up-right"></i>
-                        @php $mod = $service->server?->module; @endphp
-                        {{ in_array($mod, ['aapanel','btpanel']) ? 'Acessar AAPanel' : (in_array($mod, ['whm','cpanel']) ? 'Acessar cPanel' : 'Acessar Painel') }}
+                        @php
+                            $panelLabel = \App\Services\ServerModules\ServerModuleManager::panelLabel(
+                                $service->server?->module,
+                                'Painel'
+                            );
+                        @endphp
+                        {{ 'Acessar ' . $panelLabel }}
                     </a>
                     @endif
                     @if($service->username)
@@ -185,11 +190,12 @@
 
             {{-- Informações de Acesso --}}
             @if($service->username && $service->status === 'active')
-            @php $moduleLabel = match($service->server?->module) {
-                'aapanel','btpanel' => 'AAPanel',
-                'whm','cpanel'      => 'cPanel',
-                default             => 'Painel'
-            }; @endphp
+            @php
+                $moduleLabel = \App\Services\ServerModules\ServerModuleManager::panelLabel(
+                    $service->server?->module,
+                    'Painel'
+                );
+            @endphp
             <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                 <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
                     <span class="font-semibold text-gray-900"><i class="bi bi-key me-2 text-blue-600"></i>Acesso {{ $moduleLabel }}</span>

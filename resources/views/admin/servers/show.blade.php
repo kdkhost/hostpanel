@@ -391,18 +391,24 @@
                         <label class="form-label">Modulo</label>
                         <select class="form-select" x-model="editForm.module" @change="applyModuleDefaults()">
                             <option value="whm">WHM/cPanel</option>
+                            <option value="whmsonic">WHMSonic</option>
                             <option value="cpanel">cPanel</option>
                             <option value="aapanel">AAPanel</option>
                             <option value="btpanel">BT Panel</option>
                             <option value="plesk">Plesk</option>
                             <option value="directadmin">DirectAdmin</option>
                             <option value="ispconfig">ISPConfig</option>
+                            <option value="blesta">Blesta</option>
+                            <option value="cyberpanel">CyberPanel</option>
+                            <option value="webuzo">Webuzo</option>
+                            <option value="hestia">HestiaCP</option>
+                            <option value="virtualmin">Virtualmin</option>
                             <option value="none">Nenhum</option>
                         </select>
                     </div>
-                    <div class="col-12" x-show="usesAaPanel()">
+                    <div class="col-12" x-show="moduleHelpText()">
                         <div class="alert alert-info py-2 small mb-0">
-                            Para AAPanel ou BT Panel, use a API Key do painel. O usuario pode ficar em branco.
+                            <span x-text="moduleHelpText()"></span>
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -412,6 +418,10 @@
                     <div class="col-md-6">
                         <label class="form-label">API Key <span x-show="requiresApiKey()">*</span></label>
                         <input type="text" class="form-control" x-model="editForm.api_key" placeholder="Preencha apenas para alterar" :required="requiresApiKey() && !hasStoredApiKey">
+                    </div>
+                    <div class="col-md-6" x-show="requiresPassword()">
+                        <label class="form-label">Senha <span x-show="requiresPassword()">*</span></label>
+                        <input type="password" class="form-control" x-model="editForm.password" placeholder="Preencha apenas para alterar" :required="requiresPassword() && !hasStoredPassword">
                     </div>
                     <div class="col-md-4">
                         <label class="form-label">Max. contas</label>
@@ -467,6 +477,8 @@ function serverShow() {
         checkingHealth: false,
         savingEdit: false,
         hasStoredApiKey: true,
+        hasStoredPassword: true,
+        moduleCatalog: @js(\App\Services\ServerModules\ServerModuleManager::catalog()),
         editForm: {
             name: @js($server->name),
             hostname: @js($server->hostname),
@@ -477,6 +489,7 @@ function serverShow() {
             module: @js($server->module ?: 'whm'),
             username: @js($server->username),
             api_key: '',
+            password: '',
             max_accounts: {{ (int) ($server->max_accounts ?? 0) }},
             nameserver1: @js($server->nameserver1),
             nameserver2: @js($server->nameserver2),
@@ -523,25 +536,62 @@ function serverShow() {
         },
 
         requiresUsername() {
-            return ['whm', 'cpanel', 'plesk', 'directadmin', 'ispconfig'].includes(this.editForm.module);
+            return !!this.moduleCatalog[String(this.editForm.module || 'none').toLowerCase()]?.requires_username;
         },
 
         requiresApiKey() {
-            return this.editForm.module !== 'none';
+            return !!this.moduleCatalog[String(this.editForm.module || 'none').toLowerCase()]?.requires_api_key;
+        },
+
+        requiresPassword() {
+            return !!this.moduleCatalog[String(this.editForm.module || 'none').toLowerCase()]?.requires_password;
         },
 
         usesAaPanel() {
-            return ['aapanel', 'btpanel'].includes(this.editForm.module);
+            return ['aapanel', 'btpanel'].includes(String(this.editForm.module || 'none').toLowerCase());
+        },
+
+        moduleHelpText() {
+            if (this.usesAaPanel()) {
+                return 'Use a API Key do painel. Para BT Panel, o sistema usa a mesma integracao do AAPanel.';
+            }
+
+            if (this.requiresApiKey() && this.requiresUsername()) {
+                return 'Este modulo usa usuario e API Key/token para validar conexao e operacoes automaticas.';
+            }
+
+            if (this.requiresUsername() && this.requiresPassword()) {
+                return 'Este modulo trabalha com usuario e senha do painel. A senha pode ficar em branco para manter a credencial atual.';
+            }
+
+            if (this.requiresApiKey()) {
+                return 'Preencha a API Key ou token do painel para habilitar os testes de conectividade.';
+            }
+
+            return '';
         },
 
         applyModuleDefaults() {
-            if (this.usesAaPanel() && (!this.editForm.port || this.editForm.port === 2087)) {
-                this.editForm.port = 8888;
+            const moduleKey = String(this.editForm.module || 'none').toLowerCase();
+            const defaultPort = Number(this.moduleCatalog[moduleKey]?.default_port || 2087);
+            const knownPorts = Object.values(this.moduleCatalog)
+                .map((definition) => Number(definition.default_port || 0))
+                .filter((port) => port > 0);
+
+            if (!this.editForm.port || knownPorts.includes(Number(this.editForm.port))) {
+                this.editForm.port = defaultPort;
             }
 
-            if (this.editForm.module === 'none') {
+            if (!this.requiresUsername()) {
                 this.editForm.username = '';
+            }
+
+            if (!this.requiresApiKey()) {
                 this.editForm.api_key = '';
+            }
+
+            if (!this.requiresPassword()) {
+                this.editForm.password = '';
             }
         },
 
@@ -553,7 +603,7 @@ function serverShow() {
             this.savingEdit = true;
             const payload = {
                 ...this.editForm,
-                module: this.editForm.module === 'btpanel' ? 'aapanel' : this.editForm.module,
+                module: String(this.editForm.module || 'none').toLowerCase(),
             };
 
             const d = await HostPanel.fetch('{{ route("admin.servers.update", $server) }}', {

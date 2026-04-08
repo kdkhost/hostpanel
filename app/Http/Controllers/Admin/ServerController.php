@@ -7,6 +7,7 @@ use App\Jobs\ServerHealthCheckJob;
 use App\Models\Server;
 use App\Models\ServerGroup;
 use App\Models\ServerHealthLog;
+use App\Services\ServerModules\ServerModuleManager;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -17,7 +18,6 @@ class ServerController extends Controller
         $module = strtolower(trim((string) $module));
 
         return match ($module) {
-            'btpanel' => 'aapanel',
             '' => 'none',
             default => $module,
         };
@@ -26,8 +26,9 @@ class ServerController extends Controller
     protected function serverRules(Request $request, bool $updating = false): array
     {
         $module = $this->normalizeModule($request->input('module'));
-        $requiresUsername = in_array($module, ['whm', 'cpanel', 'plesk', 'directadmin', 'ispconfig'], true);
-        $requiresApiKey = $module !== 'none';
+        $requiresUsername = ServerModuleManager::requiresUsername($module);
+        $requiresApiKey = ServerModuleManager::requiresApiKey($module);
+        $requiresPassword = ServerModuleManager::requiresPassword($module);
 
         return [
             'server_group_id' => 'nullable|exists:server_groups,id',
@@ -37,9 +38,12 @@ class ServerController extends Controller
             'ip_address_secondary' => 'nullable|ip',
             'port' => 'required|integer|min:1|max:65535',
             'type' => 'required|in:shared,reseller,vps,dedicated,other',
-            'module' => 'required|in:whm,cpanel,aapanel,btpanel,plesk,directadmin,ispconfig,none',
+            'module' => 'required|in:' . implode(',', ServerModuleManager::allowedModules()),
             'username' => $requiresUsername ? 'required|string|max:100' : 'nullable|string|max:100',
             'api_key' => $requiresApiKey
+                ? ($updating ? 'nullable|string' : 'required|string')
+                : 'nullable|string',
+            'password' => $requiresPassword
                 ? ($updating ? 'nullable|string' : 'required|string')
                 : 'nullable|string',
             'max_accounts' => 'nullable|integer|min:0',
@@ -88,12 +92,20 @@ class ServerController extends Controller
 
         $data = $request->only([
             'server_group_id', 'name', 'hostname', 'ip_address', 'ip_address_secondary',
-            'port', 'type', 'module', 'username', 'api_key', 'api_hash', 'max_accounts',
+            'port', 'type', 'module', 'username', 'api_key', 'api_hash', 'password', 'max_accounts',
             'secure', 'active', 'nameserver1', 'nameserver2', 'nameserver3',
         ]);
 
         $data['module'] = $this->normalizeModule($data['module'] ?? null);
-        $data['username'] = $data['username'] ?: null;
+        $data['username'] = ServerModuleManager::requiresUsername($data['module']) && !empty($data['username'])
+            ? $data['username']
+            : null;
+        $data['api_key'] = ServerModuleManager::requiresApiKey($data['module']) && !empty($data['api_key'])
+            ? $data['api_key']
+            : null;
+        $data['password'] = ServerModuleManager::requiresPassword($data['module']) && !empty($data['password'])
+            ? $data['password']
+            : null;
 
         $server = Server::create($data);
 
@@ -116,10 +128,20 @@ class ServerController extends Controller
         ]);
 
         $data['module'] = $this->normalizeModule($data['module'] ?? null);
-        $data['username'] = $data['username'] ?: null;
+        $data['username'] = ServerModuleManager::requiresUsername($data['module']) && !empty($data['username'])
+            ? $data['username']
+            : null;
 
-        if ($request->filled('api_key')) {
+        if (!ServerModuleManager::requiresApiKey($data['module'])) {
+            $data['api_key'] = null;
+        } elseif ($request->filled('api_key')) {
             $data['api_key'] = $request->input('api_key');
+        }
+
+        if (!ServerModuleManager::requiresPassword($data['module'])) {
+            $data['password'] = null;
+        } elseif ($request->filled('password')) {
+            $data['password'] = $request->input('password');
         }
 
         $server->update($data);

@@ -72,10 +72,10 @@ class AutoLoginController extends Controller
             $url    = $token->publicUrl();
             $client = $service->client;
 
-            $panelName = match ($service->server?->module) {
-                'aapanel', 'btpanel' => 'AAPanel',
-                default              => 'cPanel',
-            };
+            $panelName = \App\Services\ServerModules\ServerModuleManager::panelLabel(
+                $service->server?->module,
+                'Painel'
+            );
 
             // WhatsApp
             if ($client->phone && $client->whatsapp_enabled) {

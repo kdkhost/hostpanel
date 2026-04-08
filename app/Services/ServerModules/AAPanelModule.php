@@ -17,7 +17,10 @@ use Illuminate\Support\Str;
  */
 class AAPanelModule extends AbstractServerModule
 {
-    protected function moduleName(): string { return 'AAPanel'; }
+    protected function moduleName(): string
+    {
+        return ServerModuleManager::label($this->server->module, 'AAPanel');
+    }
 
     /* ------------------------------------------------------------------ */
     /*  Autenticação                                                        */

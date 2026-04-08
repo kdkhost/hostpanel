@@ -21,7 +21,10 @@ class WhmModule extends AbstractServerModule
         $this->whm = new WhmService($server);
     }
 
-    protected function moduleName(): string { return 'WHM/cPanel'; }
+    protected function moduleName(): string
+    {
+        return ServerModuleManager::label($this->server->module, 'WHM/cPanel');
+    }
 
     public function createAccount(Service $service, array $options = []): array
     {

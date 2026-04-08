@@ -34,11 +34,12 @@
                     @if($service->status === 'active')
                         <button class="btn btn-warning btn-sm" @click="suspend()"><i class="bi bi-pause-circle me-1"></i>Suspender</button>
                         @if($service->username)
-                        @php $moduleLabel = match($service->server?->module) {
-                            'aapanel','btpanel' => 'AAPanel',
-                            'whm','cpanel'      => 'cPanel',
-                            default             => 'Painel'
-                        }; @endphp
+                        @php
+                            $moduleLabel = \App\Services\ServerModules\ServerModuleManager::panelLabel(
+                                $service->server?->module,
+                                'Painel'
+                            );
+                        @endphp
                         <a href="{{ route('admin.services.autologin', $service) }}" target="_blank"
                            class="btn btn-primary btn-sm">
                             <i class="bi bi-box-arrow-up-right me-1"></i>Login {{ $moduleLabel }}

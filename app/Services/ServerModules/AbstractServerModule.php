@@ -24,9 +24,11 @@ abstract class AbstractServerModule implements ServerModuleInterface
 
     protected function http(array $extraHeaders = [])
     {
-        return Http::withHeaders(array_merge([
-            'Accept' => 'application/json',
-        ], $extraHeaders))->timeout(30);
+        return Http::withOptions(['verify' => false])
+            ->withHeaders(array_merge([
+                'Accept' => 'application/json',
+            ], $extraHeaders))
+            ->timeout(30);
     }
 
     protected function log(string $action, array $context = []): void

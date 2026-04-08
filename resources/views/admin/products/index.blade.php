@@ -110,8 +110,19 @@
                             </div>
                             <div class="col-md-4"><label class="form-label fw-semibold">Módulo</label>
                                 <select class="form-select" x-model="form.module">
+                                    <option value="whm">WHM/cPanel</option>
                                     <option value="cpanel">cPanel</option>
+                                    <option value="whmsonic">WHMSonic</option>
+                                    <option value="aapanel">AAPanel</option>
+                                    <option value="btpanel">BT Panel</option>
                                     <option value="plesk">Plesk</option>
+                                    <option value="directadmin">DirectAdmin</option>
+                                    <option value="ispconfig">ISPConfig</option>
+                                    <option value="blesta">Blesta</option>
+                                    <option value="cyberpanel">CyberPanel</option>
+                                    <option value="webuzo">Webuzo</option>
+                                    <option value="hestia">HestiaCP</option>
+                                    <option value="virtualmin">Virtualmin</option>
                                     <option value="none">Nenhum</option>
                                 </select>
                             </div>

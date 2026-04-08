@@ -57,6 +57,11 @@
             <i class="bi bi-exclamation-triangle-fill me-1"></i>
             <strong>Frequência obrigatória:</strong> A expressão <code>* * * * *</code> (todo minuto) é necessária para que o Laravel Scheduler funcione corretamente. Os agendamentos individuais controlam a frequência real de cada tarefa.
         </div>
+        <div class="alert alert-info py-2 px-3 small mt-3 mb-0">
+            <i class="bi bi-info-circle-fill me-1"></i>
+            Com esta linha principal, o monitoramento de servidores, a geração de faturas e as suspensões automáticas já executam normalmente.
+            Os queue workers abaixo ficam reservados para processamento assíncrono de email e WhatsApp.
+        </div>
     </div>
 </div>
 
@@ -227,7 +232,7 @@
         <i class="bi bi-stack text-warning fs-5"></i>
         <div>
             <div class="fw-semibold">Queue Workers — Filas de Email e WhatsApp</div>
-            <small class="text-muted">Necessário para processamento assíncrono com rate limiting anti-spam e anti-banimento</small>
+            <small class="text-muted">Opcional para o núcleo do sistema e recomendado apenas para processamento assíncrono</small>
         </div>
     </div>
     <div class="card-body">

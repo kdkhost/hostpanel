@@ -12,14 +12,55 @@ use Illuminate\Http\Request;
 
 class ServerController extends Controller
 {
+    protected function normalizeModule(?string $module): string
+    {
+        $module = strtolower(trim((string) $module));
+
+        return match ($module) {
+            'btpanel' => 'aapanel',
+            '' => 'none',
+            default => $module,
+        };
+    }
+
+    protected function serverRules(Request $request, bool $updating = false): array
+    {
+        $module = $this->normalizeModule($request->input('module'));
+        $requiresUsername = in_array($module, ['whm', 'cpanel', 'plesk', 'directadmin', 'ispconfig'], true);
+        $requiresApiKey = $module !== 'none';
+
+        return [
+            'server_group_id' => 'nullable|exists:server_groups,id',
+            'name' => 'required|string|max:100',
+            'hostname' => 'required|string|max:255',
+            'ip_address' => 'required|ip',
+            'ip_address_secondary' => 'nullable|ip',
+            'port' => 'required|integer|min:1|max:65535',
+            'type' => 'required|in:shared,reseller,vps,dedicated,other',
+            'module' => 'required|in:whm,cpanel,aapanel,btpanel,plesk,directadmin,ispconfig,none',
+            'username' => $requiresUsername ? 'required|string|max:100' : 'nullable|string|max:100',
+            'api_key' => $requiresApiKey
+                ? ($updating ? 'nullable|string' : 'required|string')
+                : 'nullable|string',
+            'max_accounts' => 'nullable|integer|min:0',
+            'secure' => 'nullable|boolean',
+            'active' => 'nullable|boolean',
+            'nameserver1' => 'nullable|string|max:255',
+            'nameserver2' => 'nullable|string|max:255',
+            'nameserver3' => 'nullable|string|max:255',
+        ];
+    }
+
     public function index(Request $request)
     {
         if ($request->expectsJson()) {
             $servers = Server::with(['group', 'latestHealthLog'])
                 ->withCount('services')
                 ->get();
+
             return response()->json($servers);
         }
+
         return view('admin.servers.index');
     }
 
@@ -27,46 +68,46 @@ class ServerController extends Controller
     {
         $server->load(['group', 'latestHealthLog']);
         $server->loadCount('services');
+
         $healthHistory = ServerHealthLog::where('server_id', $server->id)
-            ->orderByDesc('checked_at')->limit(24)->get();
+            ->orderByDesc('checked_at')
+            ->limit(24)
+            ->get();
+
         $services = \App\Models\Service::where('server_id', $server->id)
             ->with('client:id,name,email')
             ->orderByDesc('created_at')
             ->get();
+
         return view('admin.servers.show', compact('server', 'healthHistory', 'services'));
     }
 
     public function store(Request $request): JsonResponse
     {
-        $request->validate([
-            'name'       => 'required|string|max:100',
-            'hostname'   => 'required|string',
-            'ip_address' => 'required|ip',
-            'port'       => 'required|integer|min:1|max:65535',
-            'type'       => 'required|in:shared,reseller,vps,dedicated,other',
-            'module'     => 'required|in:whm,cpanel,aapanel,btpanel,plesk,directadmin,ispconfig,none',
-            'username'   => 'nullable|string',
-            'api_key'    => 'required|string',
-        ]);
+        $request->validate($this->serverRules($request));
 
-        $server = Server::create($request->only([
+        $data = $request->only([
             'server_group_id', 'name', 'hostname', 'ip_address', 'ip_address_secondary',
             'port', 'type', 'module', 'username', 'api_key', 'api_hash', 'max_accounts',
             'secure', 'active', 'nameserver1', 'nameserver2', 'nameserver3',
-        ]));
+        ]);
 
-        dispatch(new ServerHealthCheckJob($server->id));
+        $data['module'] = $this->normalizeModule($data['module'] ?? null);
+        $data['username'] = $data['username'] ?: null;
 
-        return response()->json(['message' => 'Servidor cadastrado com sucesso!', 'server' => $server], 201);
+        $server = Server::create($data);
+
+        ServerHealthCheckJob::dispatchSync($server->id);
+
+        return response()->json([
+            'message' => 'Servidor cadastrado com sucesso!',
+            'server' => $server->fresh(['group', 'latestHealthLog']),
+        ], 201);
     }
 
     public function update(Request $request, Server $server): JsonResponse
     {
-        $request->validate([
-            'name'       => 'required|string|max:100',
-            'hostname'   => 'required|string',
-            'ip_address' => 'required|ip',
-        ]);
+        $request->validate($this->serverRules($request, true));
 
         $data = $request->only([
             'server_group_id', 'name', 'hostname', 'ip_address', 'ip_address_secondary',
@@ -74,48 +115,73 @@ class ServerController extends Controller
             'nameserver1', 'nameserver2', 'nameserver3',
         ]);
 
+        $data['module'] = $this->normalizeModule($data['module'] ?? null);
+        $data['username'] = $data['username'] ?: null;
+
         if ($request->filled('api_key')) {
-            $data['api_key'] = $request->api_key;
+            $data['api_key'] = $request->input('api_key');
         }
 
         $server->update($data);
-        return response()->json(['message' => 'Servidor atualizado!', 'server' => $server->fresh()]);
+
+        ServerHealthCheckJob::dispatchSync($server->id);
+
+        return response()->json([
+            'message' => 'Servidor atualizado!',
+            'server' => $server->fresh(['group', 'latestHealthLog']),
+        ]);
     }
 
     public function destroy(Server $server): JsonResponse
     {
         if ($server->services()->where('status', 'active')->count() > 0) {
-            return response()->json(['message' => 'Servidor possui serviços ativos. Migre-os antes de remover.'], 422);
+            return response()->json([
+                'message' => 'Servidor possui servicos ativos. Migre-os antes de remover.',
+            ], 422);
         }
+
         $server->delete();
+
         return response()->json(['message' => 'Servidor removido com sucesso!']);
     }
 
     public function healthCheck(Server $server): JsonResponse
     {
-        dispatch(new ServerHealthCheckJob($server->id));
-        return response()->json(['message' => 'Health check iniciado!']);
+        ServerHealthCheckJob::dispatchSync($server->id);
+
+        return response()->json([
+            'message' => 'Health check executado com sucesso!',
+            'server' => $server->fresh(['latestHealthLog']),
+        ]);
     }
 
     public function healthStatus(Server $server): JsonResponse
     {
         $latest = $server->latestHealthLog;
+        $lastCheckedAt = $latest?->checked_at ?: $server->last_check_at;
+        $networkStatus = $latest?->network_status ?: ($server->last_check_at ? $server->status : 'unknown');
+        $isStale = !$lastCheckedAt || $lastCheckedAt->lt(now()->subMinutes(15));
+
         return response()->json([
             'server' => $server->only(['id', 'name', 'hostname', 'status', 'last_check_at']),
             'health' => $latest,
-            'cpu'          => $latest?->cpu_usage,
-            'ram'          => $latest?->ram_usage,
-            'disk'         => $latest?->disk_usage,
-            'load_avg_1'   => $latest?->load_avg_1,
-            'load_avg_5'   => $latest?->load_avg_5,
-            'load_avg_15'  => $latest?->load_avg_15,
-            'latency_ms'   => $latest?->latency_ms,
-            'packet_loss'  => $latest?->packet_loss_pct,
-            'network_in'   => $latest?->network_in_mbps,
-            'network_out'  => $latest?->network_out_mbps,
-            'network_status'=> $latest?->network_status ?? $server->status,
-            'uptime'       => $latest?->uptime_human,
-            'checked_at'   => $latest?->checked_at?->diffForHumans(),
+            'cpu' => $latest?->cpu_usage,
+            'ram' => $latest?->ram_usage,
+            'disk' => $latest?->disk_usage,
+            'load_avg_1' => $latest?->load_avg_1,
+            'load_avg_5' => $latest?->load_avg_5,
+            'load_avg_15' => $latest?->load_avg_15,
+            'latency_ms' => $latest?->latency_ms,
+            'packet_loss' => $latest?->packet_loss_pct,
+            'network_in' => $latest?->network_in_mbps,
+            'network_out' => $latest?->network_out_mbps,
+            'network_status' => $networkStatus,
+            'uptime' => $latest?->uptime_human,
+            'checked_at' => $lastCheckedAt?->diffForHumans(),
+            'last_checked_at' => $lastCheckedAt?->toIso8601String(),
+            'minutes_since_check' => $lastCheckedAt?->diffInMinutes(now()),
+            'has_recent_check' => !$isStale,
+            'is_stale' => $isStale,
         ]);
     }
 
@@ -124,16 +190,24 @@ class ServerController extends Controller
         $history = ServerHealthLog::where('server_id', $server->id)
             ->orderBy('checked_at')
             ->limit(48)
-            ->get(['checked_at', 'cpu_usage', 'ram_usage', 'disk_usage',
-                   'load_avg_1', 'latency_ms', 'packet_loss_pct', 'network_status']);
+            ->get([
+                'checked_at',
+                'cpu_usage',
+                'ram_usage',
+                'disk_usage',
+                'load_avg_1',
+                'latency_ms',
+                'packet_loss_pct',
+                'network_status',
+            ]);
 
         return response()->json([
-            'labels'      => $history->map(fn($h) => $h->checked_at->format('H:i'))->values(),
-            'cpu'         => $history->pluck('cpu_usage')->map(fn($v) => (float)($v ?? 0))->values(),
-            'ram'         => $history->pluck('ram_usage')->map(fn($v) => (float)($v ?? 0))->values(),
-            'disk'        => $history->pluck('disk_usage')->map(fn($v) => (float)($v ?? 0))->values(),
-            'latency'     => $history->pluck('latency_ms')->values(),
-            'packet_loss' => $history->pluck('packet_loss_pct')->map(fn($v) => (float)($v ?? 0))->values(),
+            'labels' => $history->map(fn ($item) => $item->checked_at->format('H:i'))->values(),
+            'cpu' => $history->pluck('cpu_usage')->map(fn ($value) => (float) ($value ?? 0))->values(),
+            'ram' => $history->pluck('ram_usage')->map(fn ($value) => (float) ($value ?? 0))->values(),
+            'disk' => $history->pluck('disk_usage')->map(fn ($value) => (float) ($value ?? 0))->values(),
+            'latency' => $history->pluck('latency_ms')->values(),
+            'packet_loss' => $history->pluck('packet_loss_pct')->map(fn ($value) => (float) ($value ?? 0))->values(),
         ]);
     }
 
@@ -141,12 +215,20 @@ class ServerController extends Controller
     {
         try {
             $result = \App\Services\ServerModules\ServerModuleManager::make($server)->testConnection();
+            $success = is_array($result) ? (bool) ($result['success'] ?? false) : (bool) $result;
+            $message = is_array($result) ? ($result['message'] ?? null) : null;
+
             return response()->json([
-                'success' => $result['success'] ?? true,
-                'message' => $result['message'] ?? 'Conexão estabelecida com sucesso!',
+                'success' => $success,
+                'message' => $message ?: ($success
+                    ? 'Conexao estabelecida com sucesso!'
+                    : 'Nao foi possivel conectar ao servidor com os dados atuais.'),
             ]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        } catch (\Throwable $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 422);
         }
     }
 
@@ -157,8 +239,13 @@ class ServerController extends Controller
 
     public function storeGroup(Request $request): JsonResponse
     {
-        $request->validate(['name' => 'required|string|max:100', 'fill_type' => 'required|in:sequential,least_used,random']);
+        $request->validate([
+            'name' => 'required|string|max:100',
+            'fill_type' => 'required|in:sequential,least_used,random',
+        ]);
+
         $group = ServerGroup::create($request->only(['name', 'description', 'fill_type', 'active']));
+
         return response()->json(['message' => 'Grupo criado!', 'group' => $group], 201);
     }
 }

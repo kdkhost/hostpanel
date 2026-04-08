@@ -21,6 +21,8 @@
                               style="width:14px;height:14px;border-radius:50%;background:#22c55e;display:inline-block;box-shadow:0 0 0 4px rgba(34,197,94,.2)"></span>
                         <span x-show="health?.network_status === 'degraded'"
                               style="width:14px;height:14px;border-radius:50%;background:#f59e0b;display:inline-block;box-shadow:0 0 0 4px rgba(245,158,11,.2)"></span>
+                        <span x-show="health?.network_status === 'unknown'"
+                              style="width:14px;height:14px;border-radius:50%;background:#94a3b8;display:inline-block;box-shadow:0 0 0 4px rgba(148,163,184,.2)"></span>
                         <span x-show="!health || health?.network_status === 'offline'"
                               style="width:14px;height:14px;border-radius:50%;background:#ef4444;display:inline-block;box-shadow:0 0 0 4px rgba(239,68,68,.2)"></span>
                     </div>
@@ -31,8 +33,8 @@
                 </div>
                 <div class="d-flex align-items-center gap-2">
                     <span class="badge rounded-pill small"
-                          :class="health?.network_status === 'online' ? 'bg-success' : (health?.network_status === 'degraded' ? 'bg-warning text-dark' : 'bg-danger')"
-                          x-text="{'online':'Operacional','degraded':'Degradado','offline':'Offline'}[health?.network_status] ?? 'Verificando...'"></span>
+                          :class="health?.network_status === 'online' ? 'bg-success' : (health?.network_status === 'degraded' ? 'bg-warning text-dark' : (health?.network_status === 'unknown' ? 'bg-secondary' : 'bg-danger'))"
+                          x-text="{'online':'Operacional','degraded':'Degradado','offline':'Offline','unknown':'Pendente'}[health?.network_status] ?? 'Verificando...'"></span>
                     <small class="text-muted" x-text="health?.checked_at ? 'Atualizado ' + health.checked_at : ''"></small>
                     <button class="btn btn-sm btn-outline-primary" @click="healthCheck()" :disabled="checkingHealth">
                         <span x-show="checkingHealth" class="spinner-border spinner-border-sm me-1"></span>
@@ -43,6 +45,14 @@
             </div>
 
             <div class="card-body">
+                <div class="alert alert-warning py-2 px-3 small mb-4" x-show="health?.network_status === 'unknown' || health?.is_stale || !health?.last_checked_at">
+                    <div class="fw-semibold mb-1">O monitoramento automatico deste servidor esta pendente ou atrasado.</div>
+                    <div>
+                        Configure o cron principal do sistema em <a href="{{ route('admin.settings.cron') }}" class="alert-link">Configuracoes > Cron Jobs</a>
+                        e rode um health check manual apos salvar os dados do servidor.
+                    </div>
+                </div>
+
                 {{-- Métricas de Carga --}}
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
@@ -233,7 +243,7 @@
                     @foreach([
                         ['Hostname',     'hostname'],
                         ['IP Primário',  'ip_address'],
-                        ['IP Secundário','ip_address2'],
+                        ['IP Secundario','ip_address_secondary'],
                         ['Módulo',       'module'],
                         ['Tipo',         'type'],
                         ['Porta',        'port'],
@@ -267,6 +277,9 @@
                 <button class="btn btn-outline-warning btn-sm" @click="editServer()">
                     <i class="bi bi-pencil me-1"></i>Editar Servidor
                 </button>
+                <a href="{{ route('admin.settings.cron') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-clock-history me-1"></i>Cron Jobs
+                </a>
                 <button class="btn btn-outline-danger btn-sm" @click="deleteServer()">
                     <i class="bi bi-trash me-1"></i>Remover Servidor
                 </button>
@@ -284,8 +297,8 @@
                     <li class="list-group-item d-flex justify-content-between py-2 px-3">
                         <span class="text-muted">Status</span>
                         <span class="badge rounded-pill"
-                              :class="health?.network_status==='online'?'bg-success':(health?.network_status==='degraded'?'bg-warning text-dark':'bg-danger')"
-                              x-text="{'online':'Operacional','degraded':'Degradado','offline':'Offline'}[health?.network_status] ?? '—'"></span>
+                              :class="health?.network_status==='online'?'bg-success':(health?.network_status==='degraded'?'bg-warning text-dark':(health?.network_status==='unknown'?'bg-secondary':'bg-danger'))"
+                              x-text="{'online':'Operacional','degraded':'Degradado','offline':'Offline','unknown':'Pendente'}[health?.network_status] ?? '—'"></span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between py-2 px-3">
                         <span class="text-muted">CPU</span>
@@ -334,6 +347,115 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="editServerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Editar servidor</h5>
+                <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form @submit.prevent="updateServer">
+                <div class="modal-body row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Nome *</label>
+                        <input type="text" class="form-control" x-model="editForm.name" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Hostname *</label>
+                        <input type="text" class="form-control" x-model="editForm.hostname" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">IP *</label>
+                        <input type="text" class="form-control" x-model="editForm.ip_address" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">IP secundario</label>
+                        <input type="text" class="form-control" x-model="editForm.ip_address_secondary">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Porta</label>
+                        <input type="number" class="form-control" x-model="editForm.port" min="1" max="65535">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Tipo</label>
+                        <select class="form-select" x-model="editForm.type">
+                            <option value="shared">Shared</option>
+                            <option value="reseller">Reseller</option>
+                            <option value="vps">VPS</option>
+                            <option value="dedicated">Dedicated</option>
+                            <option value="other">Outro</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Modulo</label>
+                        <select class="form-select" x-model="editForm.module" @change="applyModuleDefaults()">
+                            <option value="whm">WHM/cPanel</option>
+                            <option value="cpanel">cPanel</option>
+                            <option value="aapanel">AAPanel</option>
+                            <option value="btpanel">BT Panel</option>
+                            <option value="plesk">Plesk</option>
+                            <option value="directadmin">DirectAdmin</option>
+                            <option value="ispconfig">ISPConfig</option>
+                            <option value="none">Nenhum</option>
+                        </select>
+                    </div>
+                    <div class="col-12" x-show="usesAaPanel()">
+                        <div class="alert alert-info py-2 small mb-0">
+                            Para AAPanel ou BT Panel, use a API Key do painel. O usuario pode ficar em branco.
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Usuario <span x-show="requiresUsername()">*</span></label>
+                        <input type="text" class="form-control" x-model="editForm.username" :required="requiresUsername()">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">API Key <span x-show="requiresApiKey()">*</span></label>
+                        <input type="text" class="form-control" x-model="editForm.api_key" placeholder="Preencha apenas para alterar" :required="requiresApiKey() && !hasStoredApiKey">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Max. contas</label>
+                        <input type="number" class="form-control" x-model="editForm.max_accounts" min="0">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">NS primario</label>
+                        <input type="text" class="form-control" x-model="editForm.nameserver1">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">NS secundario</label>
+                        <input type="text" class="form-control" x-model="editForm.nameserver2">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">NS terciario</label>
+                        <input type="text" class="form-control" x-model="editForm.nameserver3">
+                    </div>
+                    <div class="col-12">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" x-model="editForm.active">
+                                    <label class="form-check-label">Servidor ativo</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" x-model="editForm.secure">
+                                    <label class="form-check-label">Usar HTTPS na API</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" :disabled="savingEdit">
+                        <span x-show="savingEdit" class="spinner-border spinner-border-sm me-1"></span>Salvar alteracoes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -343,6 +465,25 @@ function serverShow() {
     return {
         health: null,
         checkingHealth: false,
+        savingEdit: false,
+        hasStoredApiKey: true,
+        editForm: {
+            name: @js($server->name),
+            hostname: @js($server->hostname),
+            ip_address: @js($server->ip_address),
+            ip_address_secondary: @js($server->ip_address_secondary),
+            port: {{ (int) ($server->port ?: 2087) }},
+            type: @js($server->type ?: 'shared'),
+            module: @js($server->module ?: 'whm'),
+            username: @js($server->username),
+            api_key: '',
+            max_accounts: {{ (int) ($server->max_accounts ?? 0) }},
+            nameserver1: @js($server->nameserver1),
+            nameserver2: @js($server->nameserver2),
+            nameserver3: @js($server->nameserver3),
+            active: {{ $server->active ? 'true' : 'false' }},
+            secure: {{ $server->secure ? 'true' : 'false' }},
+        },
         search: '',
         chartTab: 'load',
         countdown: 30,
@@ -364,11 +505,12 @@ function serverShow() {
 
         async healthCheck() {
             this.checkingHealth = true;
-            await HostPanel.fetch('{{ route("admin.servers.health.check", $server) }}', { method: 'POST' });
+            const d = await HostPanel.fetch('{{ route("admin.servers.health.check", $server) }}', { method: 'POST' });
             await this.loadHealth();
+            await this.renderCharts();
             this.checkingHealth = false;
             this.countdown = 30;
-            HostPanel.toast('Status atualizado!', 'success');
+            HostPanel.toast(d.message || 'Status atualizado!', 'success');
         },
 
         async testConnection() {
@@ -376,15 +518,68 @@ function serverShow() {
             HostPanel.toast(d.message, d.success ? 'success' : 'danger');
         },
 
+        editModal() {
+            return bootstrap.Modal.getOrCreateInstance(document.getElementById('editServerModal'));
+        },
+
+        requiresUsername() {
+            return ['whm', 'cpanel', 'plesk', 'directadmin', 'ispconfig'].includes(this.editForm.module);
+        },
+
+        requiresApiKey() {
+            return this.editForm.module !== 'none';
+        },
+
+        usesAaPanel() {
+            return ['aapanel', 'btpanel'].includes(this.editForm.module);
+        },
+
+        applyModuleDefaults() {
+            if (this.usesAaPanel() && (!this.editForm.port || this.editForm.port === 2087)) {
+                this.editForm.port = 8888;
+            }
+
+            if (this.editForm.module === 'none') {
+                this.editForm.username = '';
+                this.editForm.api_key = '';
+            }
+        },
+
         editServer() {
-            window.location.href = '{{ route("admin.servers.index") }}';
+            this.editModal().show();
+        },
+
+        async updateServer() {
+            this.savingEdit = true;
+            const payload = {
+                ...this.editForm,
+                module: this.editForm.module === 'btpanel' ? 'aapanel' : this.editForm.module,
+            };
+
+            const d = await HostPanel.fetch('{{ route("admin.servers.update", $server) }}', {
+                method: 'PUT',
+                body: JSON.stringify(payload),
+            });
+            this.savingEdit = false;
+
+            if (!d.ok || !d.server) {
+                const message = typeof d.errors === 'object'
+                    ? Object.values(d.errors).flat().join(', ')
+                    : (d.message || 'Nao foi possivel atualizar o servidor.');
+                HostPanel.toast(message, 'danger');
+                return;
+            }
+
+            this.editModal().hide();
+            HostPanel.toast(d.message || 'Servidor atualizado com sucesso!');
+            window.location.reload();
         },
 
         async deleteServer() {
             if (!(await HostPanel.confirm({ text: 'Remover servidor {{ addslashes($server->hostname) }}? Esta acao nao pode ser desfeita.', confirmButtonText: 'Sim, remover' }))) return;
             const d = await HostPanel.fetch('{{ route("admin.servers.destroy", $server) }}', { method: 'DELETE' });
             HostPanel.toast(d.message);
-            if (d.success) setTimeout(() => window.location.href = '{{ route("admin.servers.index") }}', 1200);
+            if (d.ok) setTimeout(() => window.location.href = '{{ route("admin.servers.index") }}', 1200);
         },
 
         switchChart(tab) {
@@ -434,6 +629,16 @@ function serverShow() {
         async renderCharts() {
             const d = await HostPanel.fetch('{{ route("admin.servers.health.history", $server) }}');
             if (!d.labels) return;
+
+            if (this._loadChart) {
+                this._loadChart.destroy();
+                this._loadChart = null;
+            }
+
+            if (this._networkChart) {
+                this._networkChart.destroy();
+                this._networkChart = null;
+            }
 
             const baseOpts = {
                 responsive: true,

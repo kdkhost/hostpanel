@@ -7,6 +7,20 @@
 
 @section('content')
 <div x-data="settingsPage()">
+    <div class="card mb-3 border-primary">
+        <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
+            <div>
+                <h5 class="mb-1 fw-semibold text-primary"><i class="bi bi-clock-history me-2"></i>Cron Jobs e Filas</h5>
+                <div class="text-muted small">
+                    O monitoramento de servidores, geracao de faturas e outras rotinas automaticas dependem da configuracao desta area.
+                </div>
+            </div>
+            <a href="{{ route('admin.settings.cron') }}" class="btn btn-outline-primary">
+                <i class="bi bi-terminal me-1"></i>Ver cron jobs
+            </a>
+        </div>
+    </div>
+
     <div class="row g-3">
         {{-- Nav Lateral --}}
         <div class="col-md-3">

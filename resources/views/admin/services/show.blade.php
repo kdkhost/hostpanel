@@ -304,7 +304,7 @@ function adminServiceShow() {
         },
 
         async suspend() {
-            if (!confirm('Suspender este serviço no servidor?')) return;
+            if (!(await HostPanel.confirm({ text: 'Suspender este servico no servidor?', confirmButtonText: 'Sim, suspender' }))) return;
             const d = await HostPanel.fetch('{{ route("admin.services.suspend", $service) }}', { method:'POST' });
             HostPanel.toast(d.message);
             if (d.service) setTimeout(() => window.location.reload(), 1200);
@@ -317,7 +317,7 @@ function adminServiceShow() {
         },
 
         async terminate() {
-            if (!confirm('ENCERRAR permanentemente este serviço? Esta ação é irreversível!')) return;
+            if (!(await HostPanel.confirm({ text: 'ENCERRAR permanentemente este servico? Esta acao e irreversivel!', confirmButtonText: 'Sim, encerrar', confirmButtonColor: '#dc2626' }))) return;
             const d = await HostPanel.fetch('{{ route("admin.services.terminate", $service) }}', { method:'POST' });
             HostPanel.toast(d.message);
             if (d.service) setTimeout(() => window.location.href = '{{ route("admin.services.index") }}', 1500);

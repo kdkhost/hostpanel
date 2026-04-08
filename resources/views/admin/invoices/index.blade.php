@@ -164,7 +164,7 @@ function invoicesTable() {
         },
 
         async cancel(inv) {
-            if (!confirm('Cancelar esta fatura?')) return;
+            if (!(await HostPanel.confirm({ text: 'Cancelar esta fatura?', confirmButtonText: 'Sim, cancelar' }))) return;
             const data = await HostPanel.fetch(`/admin/faturas/${inv.id}/cancelar`, { method:'POST' });
             HostPanel.toast(data.message);
             this.load();

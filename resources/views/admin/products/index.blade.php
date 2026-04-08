@@ -211,7 +211,7 @@ function productsTable() {
         },
 
         async deleteProduct(p) {
-            if (!confirm(`Excluir "${p.name}"? Esta ação não pode ser desfeita.`)) return;
+            if (!(await HostPanel.confirm({ text: `Excluir "${p.name}"? Esta acao nao pode ser desfeita.`, confirmButtonText: 'Sim, excluir' }))) return;
             const d = await HostPanel.fetch(`/admin/produtos/${p.id}`, { method:'DELETE' });
             HostPanel.toast(d.message);
             this.load();

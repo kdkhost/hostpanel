@@ -19,7 +19,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1.5">E-mail *</label>
-                    <input type="email" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-gray-50" value="{{ $client->email }}" disabled>
+                    <input type="email" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500 bg-gray-50" x-model="profile.email" disabled>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-1.5">Telefone</label>
@@ -39,14 +39,14 @@
             <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3 mt-2">Endereço</h3>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                 <div class="sm:col-span-2 flex gap-2">
-                    <input type="text" class="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" x-model="profile.postcode" placeholder="CEP" @blur="lookupCep()">
+                    <input type="text" class="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" x-model="profile.postcode" placeholder="CEP" data-viacep>
                     <button type="button" class="border border-gray-200 text-gray-600 px-3 py-2.5 rounded-lg text-sm hover:bg-gray-50" @click="lookupCep()" :disabled="cepLoading">
                         <span x-show="cepLoading" class="inline-block w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
                         <span x-show="!cepLoading"><i class="bi bi-search"></i></span>
                     </button>
                 </div>
                 <div class="sm:col-span-2">
-                    <input type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" x-model="profile.address" placeholder="Logradouro">
+                    <input type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" x-model="profile.address" placeholder="Logradouro" data-address>
                 </div>
                 <div>
                     <input type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" x-model="profile.address_number" placeholder="Número">
@@ -55,10 +55,10 @@
                     <input type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" x-model="profile.address_complement" placeholder="Complemento">
                 </div>
                 <div>
-                    <input type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" x-model="profile.city" placeholder="Cidade">
+                    <input type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" x-model="profile.city" placeholder="Cidade" data-city>
                 </div>
                 <div>
-                    <input type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" x-model="profile.state" placeholder="Estado (UF)" maxlength="2">
+                    <input type="text" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" x-model="profile.state" placeholder="Estado (UF)" maxlength="2" data-state>
                 </div>
             </div>
 
@@ -127,6 +127,7 @@ function profilePage() {
         saving: false, pwSaving: false, cepLoading: false,
         profile: {
             name: '{{ addslashes($client->name) }}',
+            email: '{{ $client->email }}',
             phone: '{{ $client->phone }}',
             whatsapp: '{{ $client->whatsapp }}',
             company_name: '{{ addslashes($client->company_name ?? "") }}',
@@ -143,24 +144,24 @@ function profilePage() {
             this.saving = true;
             const d = await HostPanel.fetch('{{ route("client.profile.update") }}', { method: 'PUT', body: JSON.stringify(this.profile) });
             this.saving = false;
-            HostPanel.toast(d.message || 'Perfil atualizado!', d.message?.includes('ucesso') ? 'success' : 'danger');
+            HostPanel.toast(d.message || 'Perfil atualizado!', d.ok ? 'success' : 'danger');
         },
 
         async changePassword() {
             this.pwSaving = true;
             const d = await HostPanel.fetch('{{ route("client.profile.password") }}', { method: 'PUT', body: JSON.stringify(this.pwForm) });
             this.pwSaving = false;
-            HostPanel.toast(d.message, d.message?.includes('ucesso') ? 'success' : 'danger');
-            if (d.message?.includes('ucesso')) { this.pwForm = { current_password:'', password:'', password_confirmation:'' }; }
+            HostPanel.toast(d.message, d.ok ? 'success' : 'danger');
+            if (d.ok) { this.pwForm = { current_password:'', password:'', password_confirmation:'' }; }
         },
 
         async lookupCep() {
             const cep = this.profile.postcode?.replace(/\D/g, '');
             if (cep?.length !== 8) return;
             this.cepLoading = true;
-            const d = await HostPanel.fetch(`/cliente/perfil/cep/${cep}`);
+            const d = await HostPanel.lookupCep(cep);
             this.cepLoading = false;
-            if (d.logradouro) {
+            if (d?.logradouro) {
                 this.profile.address = d.logradouro;
                 this.profile.city    = d.localidade;
                 this.profile.state   = d.uf;

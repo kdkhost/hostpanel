@@ -240,7 +240,7 @@ function cmsIndex() {
         },
 
         async deleteItem(i) {
-            if (!confirm('Excluir este item?')) return;
+            if (!(await HostPanel.confirm({ text: 'Excluir este item?', confirmButtonText: 'Sim, excluir' }))) return;
             const ep = CMS_ENDPOINTS[this.tab];
             const d  = await HostPanel.fetch(`${ep.store}/${i.id}`, { method:'DELETE' });
             HostPanel.toast(d.message);

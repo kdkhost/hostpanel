@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Client;
+use App\Support\InputSanitizer;
 use App\Services\BillingService;
 use App\Services\ImpersonationService;
 use Illuminate\Http\JsonResponse;
@@ -59,18 +60,18 @@ class ClientController extends Controller
             'email'           => $request->email,
             'password'        => Hash::make($request->password),
             'document_type'   => $request->document_type,
-            'document_number' => preg_replace('/\D/', '', $request->document_number),
-            'phone'           => $request->phone,
-            'mobile'          => $request->mobile,
-            'whatsapp'        => $request->whatsapp,
+            'document_number' => InputSanitizer::document($request->document_number),
+            'phone'           => InputSanitizer::phone($request->phone),
+            'mobile'          => InputSanitizer::phone($request->mobile),
+            'whatsapp'        => InputSanitizer::phone($request->whatsapp),
             'company_name'    => $request->company_name,
             'address'         => $request->address,
             'address_number'  => $request->address_number,
             'address_complement' => $request->address_complement,
             'neighborhood'    => $request->neighborhood,
             'city'            => $request->city,
-            'state'           => $request->state,
-            'postcode'        => preg_replace('/\D/', '', $request->postcode ?? ''),
+            'state'           => InputSanitizer::uf($request->state),
+            'postcode'        => InputSanitizer::postcode($request->postcode),
             'country'         => $request->country ?? 'BR',
             'status'          => $request->status,
         ]);
@@ -98,11 +99,23 @@ class ClientController extends Controller
             $data['password'] = Hash::make($request->password);
         }
 
-        if (isset($data['document_number'])) {
-            $data['document_number'] = preg_replace('/\D/', '', $data['document_number']);
+        if (array_key_exists('document_number', $data)) {
+            $data['document_number'] = InputSanitizer::document($data['document_number']);
         }
-        if (isset($data['postcode'])) {
-            $data['postcode'] = preg_replace('/\D/', '', $data['postcode']);
+        if (array_key_exists('phone', $data)) {
+            $data['phone'] = InputSanitizer::phone($data['phone']);
+        }
+        if (array_key_exists('mobile', $data)) {
+            $data['mobile'] = InputSanitizer::phone($data['mobile']);
+        }
+        if (array_key_exists('whatsapp', $data)) {
+            $data['whatsapp'] = InputSanitizer::phone($data['whatsapp']);
+        }
+        if (array_key_exists('postcode', $data)) {
+            $data['postcode'] = InputSanitizer::postcode($data['postcode']);
+        }
+        if (array_key_exists('state', $data)) {
+            $data['state'] = InputSanitizer::uf($data['state']);
         }
 
         $client->update($data);

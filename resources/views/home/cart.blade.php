@@ -6,6 +6,7 @@
     <title>Carrinho — {{ config('app.name') }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    @include('partials.hostpanel-ui-head')
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>[x-cloak]{display:none}</style>
 </head>
@@ -335,7 +336,7 @@ function cartPage() {
             } else if (r.status === 401) {
                 this.showCheckout = true;
             } else {
-                alert(d.message ?? 'Erro ao criar pedido.');
+                HostPanel.toast(d.message ?? 'Erro ao criar pedido.', 'danger');
             }
         },
 
@@ -345,5 +346,6 @@ function cartPage() {
     }
 }
 </script>
+@include('partials.hostpanel-ui-scripts')
 </body>
 </html>

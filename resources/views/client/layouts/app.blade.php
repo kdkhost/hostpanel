@@ -9,6 +9,7 @@
     <meta name="theme-color" content="#1a56db">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    @include('partials.hostpanel-ui-head')
 
     {{-- Tailwind CSS 4 via CDN --}}
     <script src="https://cdn.tailwindcss.com"></script>
@@ -198,28 +199,14 @@ function clientLayout() {
     return {
         sidebarOpen: false,
         init() {
-            // Register Service Worker
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/service-worker.js').catch(() => {});
             }
         }
     }
 }
-window.HostPanel = {
-    csrfToken: document.querySelector('meta[name=csrf-token]').content,
-    async fetch(url, opts = {}) {
-        return fetch(url, { headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json', ...opts.headers }, ...opts }).then(r => r.json());
-    },
-    toast(msg, type = 'success') {
-        const el = document.createElement('div');
-        const colors = { success:'bg-green-600', danger:'bg-red-600', info:'bg-blue-600', warning:'bg-amber-500' };
-        el.className = `fixed bottom-4 right-4 z-50 ${colors[type]||'bg-gray-800'} text-white px-4 py-3 rounded-lg shadow-lg text-sm font-medium max-w-sm`;
-        el.textContent = msg;
-        document.body.appendChild(el);
-        setTimeout(() => el.remove(), 4000);
-    }
-};
 </script>
+@include('partials.hostpanel-ui-scripts')
 {{-- Back to Top --}}
 <button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})"
     class="fixed bottom-6 right-6 z-50 bg-primary-600 hover:bg-primary-700 text-white w-10 h-10 rounded-full shadow-lg hidden items-center justify-center transition"

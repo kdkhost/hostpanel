@@ -249,7 +249,7 @@ function cartPage() {
             } else if (r.status === 401) {
                 this.showCheckout = true;
             } else {
-                alert(d.message ?? 'Erro ao criar pedido.');
+                HostPanel.toast(d.message ?? 'Erro ao criar pedido.', 'danger');
             }
         },
 

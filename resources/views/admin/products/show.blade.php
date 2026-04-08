@@ -165,7 +165,7 @@ function productShow() {
         },
 
         async destroy() {
-            if (!confirm('Excluir o produto "{{ $product->name }}"? Esta ação não pode ser desfeita.')) return;
+            if (!(await HostPanel.confirm({ text: 'Excluir o produto "{{ $product->name }}"? Esta acao nao pode ser desfeita.', confirmButtonText: 'Sim, excluir' }))) return;
             const d = await HostPanel.fetch('{{ route("admin.products.destroy", $product) }}', { method: 'DELETE' });
             HostPanel.toast(d.message);
             if (d.message) setTimeout(() => window.location = '{{ route("admin.products.index") }}', 1000);

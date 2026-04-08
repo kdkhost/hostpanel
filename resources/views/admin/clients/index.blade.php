@@ -187,7 +187,7 @@ function clientsTable() {
         },
 
         async impersonate(client) {
-            if (!confirm(`Deseja entrar como ${client.name}?`)) return;
+            if (!(await HostPanel.confirm({ text: `Deseja entrar como ${client.name}?`, confirmButtonText: 'Sim, entrar' }))) return;
             const data = await HostPanel.fetch(`/admin/clientes/${client.id}/impersonar`, { method: 'POST', body: JSON.stringify({ reason: 'Suporte administrativo' }) });
             if (data.redirect) window.location.href = data.redirect;
             else HostPanel.toast(data.message, 'danger');

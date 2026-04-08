@@ -15,6 +15,7 @@
     {{-- Google Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    @include('partials.hostpanel-ui-head')
 
     <style>
         :root {
@@ -446,25 +447,7 @@ $(function(){
 });
 </script>
 
-<script>
-    window.HostPanel = {
-        csrfToken: document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-        async fetch(url, options = {}) {
-            return fetch(url, {
-                headers: { 'X-CSRF-TOKEN': this.csrfToken, 'Accept': 'application/json', 'Content-Type': 'application/json', ...options.headers },
-                ...options,
-            }).then(r => r.json());
-        },
-        toast(message, type = 'success') {
-            const toast = document.createElement('div');
-            toast.className = `alert alert-${type} position-fixed bottom-0 end-0 m-3 shadow`;
-            toast.style.zIndex = 9999;
-            toast.innerHTML = message;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
-        }
-    };
-</script>
+@include('partials.hostpanel-ui-scripts')
 {{-- Back to Top --}}
 <button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})"
     class="btn btn-primary position-fixed shadow-lg"

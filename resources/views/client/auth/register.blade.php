@@ -7,6 +7,7 @@
     <title>Criar Conta — {{ config('app.name') }}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    @include('partials.hostpanel-ui-head')
     <style>
         body { background: linear-gradient(135deg,#0f172a 0%,#1e3a8a 50%,#1a56db 100%); min-height:100vh; display:flex; align-items:center; justify-content:center; font-family:'Segoe UI',system-ui,sans-serif; padding:2rem 1rem; }
         .auth-card { background:#fff; border-radius:1.25rem; box-shadow:0 25px 70px rgba(0,0,0,.4); width:100%; max-width:520px; overflow:hidden; }
@@ -66,7 +67,7 @@
                 </div>
                 <div class="col-12">
                     <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="terms" x-model="form.terms" required>
+                        <input class="form-check-input" type="checkbox" id="terms" x-model="form.terms_accepted" required>
                         <label class="form-check-label text-muted" for="terms">
                             Li e aceito os <a href="/termos" target="_blank" class="text-primary">Termos de Serviço</a> e a <a href="/privacidade" target="_blank" class="text-primary">Política de Privacidade</a>
                         </label>
@@ -83,12 +84,13 @@
         </div>
     </div>
 </div>
+@include('partials.hostpanel-ui-scripts')
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script>
 function registerForm() {
     return {
         loading: false,
-        form: { name:'', email:'', document_type:'cpf', document_number:'', phone:'', whatsapp:'', password:'', password_confirmation:'', terms:false },
+        form: { name:'', email:'', document_type:'cpf', document_number:'', phone:'', whatsapp:'', password:'', password_confirmation:'', terms_accepted:false },
         async submit() {
             this.loading = true;
             document.getElementById('error-msg').classList.add('d-none');

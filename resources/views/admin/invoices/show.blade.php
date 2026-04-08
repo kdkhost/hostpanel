@@ -248,7 +248,7 @@ function adminInvoiceShow() {
         },
 
         async cancelInvoice() {
-            if (!confirm('Cancelar esta fatura? Esta ação não pode ser desfeita.')) return;
+            if (!(await HostPanel.confirm({ text: 'Cancelar esta fatura? Esta acao nao pode ser desfeita.', confirmButtonText: 'Sim, cancelar' }))) return;
             const d = await HostPanel.fetch('{{ route("admin.invoices.cancel", $invoice) }}', { method: 'POST' });
             HostPanel.toast(d.message);
             if (d.invoice) setTimeout(() => window.location.reload(), 1200);

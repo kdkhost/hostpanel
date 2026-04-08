@@ -194,7 +194,7 @@ function genericKanban(type) {
         },
 
         async deleteTask(task) {
-            if (!confirm(`Excluir "${task.title}"?`)) return;
+            if (!(await HostPanel.confirm({ text: `Excluir "${task.title}"?`, confirmButtonText: 'Sim, excluir' }))) return;
             const d = await HostPanel.fetch(`{{ url('admin/kanban/tarefas') }}/${task.id}`, { method: 'DELETE' });
             HostPanel.toast(d.message);
             await this.load();

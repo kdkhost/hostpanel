@@ -381,7 +381,7 @@ function serverShow() {
         },
 
         async deleteServer() {
-            if (!confirm('Remover servidor {{ addslashes($server->hostname) }}? Esta ação não pode ser desfeita.')) return;
+            if (!(await HostPanel.confirm({ text: 'Remover servidor {{ addslashes($server->hostname) }}? Esta acao nao pode ser desfeita.', confirmButtonText: 'Sim, remover' }))) return;
             const d = await HostPanel.fetch('{{ route("admin.servers.destroy", $server) }}', { method: 'DELETE' });
             HostPanel.toast(d.message);
             if (d.success) setTimeout(() => window.location.href = '{{ route("admin.servers.index") }}', 1200);

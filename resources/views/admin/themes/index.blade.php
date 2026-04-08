@@ -184,7 +184,7 @@ function themeManager() {
         activating: null,
 
         async activate(themeId, themeName) {
-            if (!confirm(`Ativar o tema "${themeName}"?\n\nO visual do sistema será alterado imediatamente.`)) return;
+            if (!(await HostPanel.confirm({ text: `Ativar o tema "${themeName}"?\n\nO visual do sistema sera alterado imediatamente.`, confirmButtonText: 'Sim, ativar' }))) return;
 
             this.activating = themeId;
 

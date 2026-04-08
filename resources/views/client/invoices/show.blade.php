@@ -297,13 +297,13 @@ function invoiceShow() {
         },
 
         copyPix() {
-            navigator.clipboard.writeText(this.result?.pix_emv ?? '');
+            HostPanel.copyText(this.result?.pix_emv ?? '', 'Codigo PIX copiado com sucesso.');
             this.copied = true;
             setTimeout(() => this.copied = false, 3000);
         },
 
         copyBarcode() {
-            navigator.clipboard.writeText(this.result?.barcode_formatted || this.result?.barcode || '');
+            HostPanel.copyText(this.result?.barcode_formatted || this.result?.barcode || '', 'Linha digitavel copiada com sucesso.');
         },
 
         closeResult() {

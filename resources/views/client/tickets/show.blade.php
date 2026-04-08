@@ -114,7 +114,7 @@ function ticketShow() {
             else HostPanel.toast(data.message || 'Erro ao enviar resposta.', 'danger');
         },
         async closeTicket() {
-            if (!confirm('Deseja fechar este ticket?')) return;
+            if (!(await HostPanel.confirm({ text: 'Deseja fechar este ticket?', confirmButtonText: 'Sim, fechar' }))) return;
             const d = await HostPanel.fetch('{{ route("client.tickets.close", $ticket) }}', { method: 'POST' });
             if (d.redirect || d.ticket) window.location.reload();
             else HostPanel.toast(d.message, 'danger');

@@ -197,7 +197,7 @@ function couponsIndex() {
         },
 
         async deleteCoupon(c) {
-            if (!confirm(`Excluir o cupom "${c.code}"? Esta ação não pode ser desfeita.`)) return;
+            if (!(await HostPanel.confirm({ text: `Excluir o cupom "${c.code}"? Esta acao nao pode ser desfeita.`, confirmButtonText: 'Sim, excluir' }))) return;
             const d = await HostPanel.fetch(`{{ url('admin/cupons') }}/${c.id}`, { method: 'DELETE' });
             HostPanel.toast(d.message);
             await this.load();

@@ -159,7 +159,7 @@ function adminsIndex() {
         },
 
         async deleteAdmin(a) {
-            if (!confirm(`Remover administrador "${a.name}"?`)) return;
+            if (!(await HostPanel.confirm({ text: `Remover administrador "${a.name}"?`, confirmButtonText: 'Sim, remover' }))) return;
             const d = await HostPanel.fetch(`{{ url('admin/administradores') }}/${a.id}`, { method: 'DELETE' });
             HostPanel.toast(d.message);
             await this.load();

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Client;
 use App\Models\LoginLog;
+use App\Support\InputSanitizer;
 use App\Services\AffiliateService;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
@@ -110,10 +111,10 @@ class ClientAuthController extends Controller
             'email'           => $request->email,
             'password'        => Hash::make($request->password),
             'document_type'   => $request->document_type,
-            'document_number' => preg_replace('/\D/', '', $request->document_number),
-            'phone'           => $request->phone,
-            'mobile'          => $request->mobile,
-            'whatsapp'        => $request->whatsapp ?? $request->mobile,
+            'document_number' => InputSanitizer::document($request->document_number),
+            'phone'           => InputSanitizer::phone($request->phone),
+            'mobile'          => InputSanitizer::phone($request->mobile),
+            'whatsapp'        => InputSanitizer::phone($request->whatsapp ?? $request->mobile),
             'status'          => 'active',
             'terms_accepted'  => true,
             'terms_accepted_at' => now(),

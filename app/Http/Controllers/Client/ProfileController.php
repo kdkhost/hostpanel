@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Support\InputSanitizer;
 use App\Services\ViaCepService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,12 +32,22 @@ class ProfileController extends Controller
             'whatsapp'       => 'nullable|string|max:20',
         ]);
 
-        $client->update($request->only([
+        $data = $request->only([
             'name', 'email', 'document_number', 'phone', 'mobile', 'whatsapp',
             'company_name', 'birth_date', 'address', 'address_number',
             'address_complement', 'neighborhood', 'city', 'state', 'postcode',
             'country', 'marketing_consent',
-        ]));
+        ]);
+
+        $data['document_number'] = InputSanitizer::document($data['document_number'] ?? null);
+        $data['phone'] = InputSanitizer::phone($data['phone'] ?? null);
+        $data['mobile'] = InputSanitizer::phone($data['mobile'] ?? null);
+        $data['whatsapp'] = InputSanitizer::phone($data['whatsapp'] ?? null);
+        $data['postcode'] = InputSanitizer::postcode($data['postcode'] ?? null);
+        $data['state'] = InputSanitizer::uf($data['state'] ?? null);
+        $data['birth_date'] = InputSanitizer::brazilianDate($data['birth_date'] ?? null);
+
+        $client->update($data);
 
         return response()->json(['message' => 'Perfil atualizado com sucesso!', 'client' => $client->fresh()]);
     }

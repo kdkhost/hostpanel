@@ -7,6 +7,7 @@
     <title>Instalador — HostPanel</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    @include('partials.hostpanel-ui-head')
     <style>
         :root { --hp-primary: #1a56db; }
         body { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', system-ui, sans-serif; padding: 2rem 1rem; }
@@ -166,6 +167,7 @@
 </div>
 </form>
 
+@include('partials.hostpanel-ui-scripts')
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <script>
 function installer() {
@@ -180,9 +182,10 @@ function installer() {
             admin_name: '', admin_email: '', admin_pass: '', admin_pass_confirm: '',
         },
 
-        nextStep() {
+        async nextStep() {
             if (this.step === 3 && this.form.admin_pass !== this.form.admin_pass_confirm) {
-                alert('As senhas não conferem!'); return;
+                await HostPanel.alert({ text: 'As senhas nao conferem.', icon: 'error' });
+                return;
             }
             this.step++;
         },

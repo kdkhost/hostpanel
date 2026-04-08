@@ -54,7 +54,7 @@ class WhatsAppService
         if (!$this->isEnabled()) return false;
 
         SendWhatsAppJob::dispatch(
-            phone:           $phone,
+            phone:           $this->phone($phone),
             message:         $message,
             type:            $type,
             mediaUrl:        $mediaUrl,

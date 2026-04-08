@@ -224,7 +224,7 @@ function adminClientShow() {
 
         async changeStatus(status) {
             const labels = { suspended: 'suspender', active: 'reativar' };
-            if (!confirm(`Deseja ${labels[status]} a conta de {{ $client->name }}?`)) return;
+            if (!(await HostPanel.confirm({ text: `Deseja ${labels[status]} a conta de {{ $client->name }}?`, confirmButtonText: 'Sim, continuar' }))) return;
             const d = await HostPanel.fetch('{{ route("admin.clients.status", $client) }}', {
                 method: 'POST', body: JSON.stringify({ status })
             });

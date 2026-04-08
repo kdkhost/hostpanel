@@ -15,7 +15,7 @@
                 <option value="closed">Fechados</option>
             </select>
         </div>
-        <a href="{{ route('client.tickets.store') }}" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg">
+        <a href="{{ route('client.tickets.create') }}" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg">
             <i class="bi bi-plus-lg"></i> Novo Ticket
         </a>
     </div>
@@ -48,7 +48,7 @@
                 <div class="py-12 text-center">
                     <i class="bi bi-headset text-5xl text-gray-200 block mb-3"></i>
                     <p class="text-gray-500">Você não possui tickets abertos.</p>
-                    <a href="{{ route('client.tickets.store') }}" class="mt-3 inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-blue-700">
+                    <a href="{{ route('client.tickets.create') }}" class="mt-3 inline-flex items-center gap-2 bg-blue-600 text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-blue-700">
                         <i class="bi bi-plus-lg"></i> Abrir Ticket
                     </a>
                 </div>

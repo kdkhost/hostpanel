@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Support\InputSanitizer;
 use App\Services\ViaCepService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -82,12 +83,16 @@ class ProfileController extends Controller
         return response()->json($result);
     }
 
-    public function notifications(Request $request): JsonResponse
+    public function notifications(Request $request): JsonResponse|View
     {
         $notifications = $this->client()->notifications()
             ->when($request->unread_only, fn($q) => $q->where('read', false))
             ->orderByDesc('created_at')
             ->paginate(20);
+
+        if (!$request->expectsJson() && !$request->ajax()) {
+            return view('client.profile.notifications');
+        }
 
         return response()->json($notifications);
     }

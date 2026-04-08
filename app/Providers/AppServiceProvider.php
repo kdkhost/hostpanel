@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Services\ThemeManager;
 use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -63,6 +65,19 @@ class AppServiceProvider extends ServiceProvider
             $key   = trim($parts[0]);
             $fallback = isset($parts[1]) ? trim($parts[1]) : "''";
             return "<?php echo data_get(app(\App\Services\ThemeManager::class)->getManifest(app(\App\Services\ThemeManager::class)->getActive()), {$key}, {$fallback}); ?>";
+        });
+
+        View::composer('client.layouts.app', function ($view) {
+            $unreadNotifications = 0;
+
+            if (Auth::guard('client')->check()) {
+                $unreadNotifications = Auth::guard('client')->user()
+                    ->notifications()
+                    ->where('read', false)
+                    ->count();
+            }
+
+            $view->with('unreadNotifications', $unreadNotifications);
         });
     }
 }

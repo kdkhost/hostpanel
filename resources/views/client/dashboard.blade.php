@@ -132,7 +132,7 @@
 <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
     <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
         <h2 class="font-semibold text-gray-900">Tickets de Suporte</h2>
-        <a href="{{ route('client.tickets.store') }}" class="inline-flex items-center gap-1.5 bg-primary-600 text-white text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-primary-700">
+        <a href="{{ route('client.tickets.create') }}" class="inline-flex items-center gap-1.5 bg-primary-600 text-white text-sm font-semibold px-3 py-1.5 rounded-lg hover:bg-primary-700">
             <i class="bi bi-plus-lg"></i> Novo Ticket
         </a>
     </div>

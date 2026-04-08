@@ -7,7 +7,7 @@
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div class="px-6 py-5 border-b border-gray-100">
             <h2 class="font-semibold text-gray-900">Novo Ticket</h2>
-            <p class="text-sm text-gray-500 mt-1">Nossa equipe responderá em até 4 horas úteis.</p>
+            <p class="text-sm text-gray-500 mt-1">Nossa equipe respondera em ate 4 horas uteis.</p>
         </div>
         <form @submit.prevent="submit" class="px-6 py-5 space-y-4">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -24,18 +24,18 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-1.5">Prioridade</label>
                     <select class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" x-model="form.priority">
                         <option value="low">Baixa</option>
-                        <option value="medium" selected>Média</option>
+                        <option value="medium" selected>Media</option>
                         <option value="high">Alta</option>
                         <option value="urgent">Urgente</option>
                     </select>
                 </div>
             </div>
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Serviço Relacionado (opcional)</label>
+                <label class="block text-sm font-semibold text-gray-700 mb-1.5">Servico relacionado (opcional)</label>
                 <select class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" x-model="form.service_id">
                     <option value="">Nenhum</option>
                     @foreach($services as $service)
-                        <option value="{{ $service->id }}">{{ $service->domain ?? $service->product?->name ?? "Serviço #{$service->id}" }}</option>
+                        <option value="{{ $service->id }}">{{ $service->domain ?? $service->product?->name ?? "Servico #{$service->id}" }}</option>
                     @endforeach
                 </select>
             </div>
@@ -45,12 +45,63 @@
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1.5">Mensagem *</label>
-                <textarea class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" rows="6" x-model="form.message" required placeholder="Descreva detalhadamente o problema, com informações relevantes como domínio, usuário, mensagem de erro, etc."></textarea>
+                <textarea class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-blue-500" rows="6" x-model="form.message" required placeholder="Descreva o problema com o maximo de contexto possivel."></textarea>
             </div>
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1.5">Anexos (opcional)</label>
-                <input type="file" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" multiple accept="image/*,.pdf,.txt,.log" x-ref="fileInput">
-                <p class="text-xs text-gray-400 mt-1">Máx. 5 arquivos, 10MB cada. Aceitos: imagens, PDF, TXT, LOG.</p>
+                <input type="file" class="hidden" multiple accept="image/*,.pdf,.txt,.log" x-ref="fileInput" @change="uploader.onInputChange($event)">
+                <div class="hp-dropzone p-5 cursor-pointer" :class="{ 'is-dragging': uploader.dragging, 'is-uploading': loading }"
+                    @click="uploader.openPicker()"
+                    @dragover.prevent="uploader.handleDragOver($event)"
+                    @dragleave="uploader.handleDragLeave($event)"
+                    @drop="uploader.handleDrop($event)">
+                    <div class="flex flex-col items-center justify-center text-center">
+                        <div class="w-14 h-14 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-2xl mb-3">
+                            <i class="bi bi-cloud-arrow-up"></i>
+                        </div>
+                        <div class="text-sm font-semibold text-gray-800">Arraste e solte os arquivos aqui</div>
+                        <div class="text-xs text-gray-500 mt-1">ou clique para selecionar imagens, PDF, TXT e LOG</div>
+                        <div class="text-xs text-gray-400 mt-3">Max. 5 arquivos, 10MB cada.</div>
+                    </div>
+                </div>
+
+                <div class="mt-3 flex flex-wrap gap-2" x-show="uploader.files.length > 0">
+                    <template x-for="(file, index) in uploader.files" :key="`${file.name}-${file.lastModified}`">
+                        <span class="hp-file-pill text-xs">
+                            <i class="bi bi-paperclip"></i>
+                            <span x-text="`${file.name} (${HostPanel.formatBytes(file.size)})`"></span>
+                            <button type="button" class="text-blue-700 hover:text-blue-900" @click.stop="uploader.removeFile(index)">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </span>
+                    </template>
+                </div>
+
+                <div class="mt-3 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4" x-show="loading && uploader.hasFiles()">
+                    <div class="flex items-center justify-between gap-3 text-sm">
+                        <div class="font-semibold text-emerald-900">Enviando anexos</div>
+                        <div class="font-semibold text-emerald-700" x-text="uploader.progressLabel()"></div>
+                    </div>
+                    <div class="hp-progress-track mt-3">
+                        <div class="hp-progress-bar" :style="`width:${uploader.uploadProgress}%`"></div>
+                    </div>
+                    <div class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-emerald-900">
+                        <div>
+                            <div class="font-semibold uppercase tracking-wide text-emerald-700">Enviado</div>
+                            <div x-text="`${uploader.uploadedLabel()} de ${uploader.totalBytesLabel()}`"></div>
+                        </div>
+                        <div>
+                            <div class="font-semibold uppercase tracking-wide text-emerald-700">Velocidade</div>
+                            <div x-text="uploader.speedLabel()"></div>
+                        </div>
+                        <div>
+                            <div class="font-semibold uppercase tracking-wide text-emerald-700">Tempo restante</div>
+                            <div x-text="uploader.remainingLabel()"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="text-xs text-red-600 mt-2" x-show="uploader.error" x-text="uploader.error"></p>
             </div>
             <div class="alert d-none" :class="error ? 'bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm' : ''" x-show="error" x-text="error"></div>
             <div class="flex gap-3 pt-2">
@@ -69,26 +120,73 @@
 <script>
 function createTicket() {
     return {
-        loading: false, error: null,
-        form: { ticket_department_id:'', priority:'medium', subject:'', message:'', service_id:'' },
-        async submit() {
-            this.loading = true; this.error = null;
-            const formData = new FormData();
-            Object.entries(this.form).forEach(([k,v]) => v && formData.append(k, v));
-            Array.from(this.$refs.fileInput.files).forEach(f => formData.append('attachments[]', f));
+        loading: false,
+        error: null,
+        uploader: HostPanel.createUploadState({
+            accept: 'image/*,.pdf,.txt,.log',
+            maxFiles: 5,
+            maxFileSize: 10 * 1024 * 1024,
+        }),
+        form: {
+            ticket_department_id: '',
+            priority: 'medium',
+            subject: '',
+            message: '',
+            service_id: '',
+        },
 
-            const res = await fetch('{{ route("client.tickets.store") }}', {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': HostPanel.csrfToken, 'Accept': 'application/json' },
-                body: formData
+        async submit() {
+            this.loading = true;
+            this.error = null;
+
+            const formData = new FormData();
+            Object.entries(this.form).forEach(([key, value]) => {
+                if (value) {
+                    formData.append(key, value);
+                }
             });
-            const data = await res.json();
+            this.uploader.files.forEach((file) => formData.append('attachments[]', file));
+
+            this.uploader.startUpload();
+
+            let data;
+            try {
+                data = await HostPanel.upload({
+                    url: '{{ route("client.tickets.store") }}',
+                    method: 'POST',
+                    body: formData,
+                    onProgress: (progress) => this.uploader.updateProgress(progress),
+                });
+                this.uploader.finishUpload();
+            } catch (error) {
+                this.uploader.failUpload();
+                this.loading = false;
+                this.error = 'Falha de rede ao abrir o ticket.';
+                HostPanel.toast(this.error, 'danger');
+                return;
+            }
+
             this.loading = false;
-            if (data.redirect) { window.location.href = data.redirect; return; }
-            if (data.ticket) { window.location.href = `/cliente/tickets/${data.ticket.id}`; return; }
-            this.error = typeof data.errors === 'object' ? Object.values(data.errors).flat().join(', ') : (data.message || 'Erro ao abrir ticket.');
-        }
-    }
+
+            if (data.redirect) {
+                window.location.href = data.redirect;
+                return;
+            }
+
+            if (data.ticket) {
+                window.location.href = `/cliente/tickets/${data.ticket.id}`;
+                return;
+            }
+
+            this.error = typeof data.errors === 'object'
+                ? Object.values(data.errors).flat().join(', ')
+                : (data.message || 'Erro ao abrir ticket.');
+        },
+
+        init() {
+            this.uploader.attachInput(this.$refs.fileInput);
+        },
+    };
 }
 </script>
 @endpush

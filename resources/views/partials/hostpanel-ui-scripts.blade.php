@@ -167,6 +167,112 @@
         field.dispatchEvent(new Event('change', { bubbles: true }));
     };
 
+    const formatBytes = (value) => {
+        const bytes = Number(value || 0);
+        if (!Number.isFinite(bytes) || bytes <= 0) {
+            return '0 B';
+        }
+
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let size = bytes;
+        let unitIndex = 0;
+
+        while (size >= 1024 && unitIndex < units.length - 1) {
+            size /= 1024;
+            unitIndex += 1;
+        }
+
+        const decimals = size >= 100 || unitIndex === 0 ? 0 : size >= 10 ? 1 : 2;
+        return `${size.toFixed(decimals).replace('.', ',')} ${units[unitIndex]}`;
+    };
+
+    const formatDuration = (value) => {
+        const seconds = Math.max(0, Math.ceil(Number(value || 0)));
+        if (!Number.isFinite(seconds)) {
+            return '--';
+        }
+
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = seconds % 60;
+
+        if (hours > 0) {
+            return `${hours}h ${String(minutes).padStart(2, '0')}min`;
+        }
+
+        if (minutes > 0) {
+            return `${minutes}min ${String(remainingSeconds).padStart(2, '0')}s`;
+        }
+
+        return `${remainingSeconds}s`;
+    };
+
+    const matchesAcceptRule = (file, accept = '') => {
+        const rules = String(accept || '')
+            .split(',')
+            .map((rule) => rule.trim().toLowerCase())
+            .filter(Boolean);
+
+        if (!rules.length) {
+            return true;
+        }
+
+        const fileName = String(file?.name || '').toLowerCase();
+        const mimeType = String(file?.type || '').toLowerCase();
+
+        return rules.some((rule) => {
+            if (rule === '*/*') {
+                return true;
+            }
+
+            if (rule.endsWith('/*')) {
+                return mimeType.startsWith(rule.slice(0, -1));
+            }
+
+            if (rule.startsWith('.')) {
+                return fileName.endsWith(rule);
+            }
+
+            return mimeType === rule;
+        });
+    };
+
+    const normalizeResponsePayload = async (response) => {
+        const contentType = response.headers.get('content-type') || '';
+        const payload = contentType.includes('application/json')
+            ? await response.json()
+            : { message: await response.text(), ok: response.ok };
+
+        if (typeof payload === 'object' && payload !== null && !('ok' in payload)) {
+            payload.ok = response.ok;
+            payload.status = response.status;
+        }
+
+        return payload;
+    };
+
+    const normalizeXhrPayload = (xhr) => {
+        const contentType = xhr.getResponseHeader('content-type') || '';
+        let payload;
+
+        if (contentType.includes('application/json')) {
+            try {
+                payload = JSON.parse(xhr.responseText || '{}');
+            } catch (error) {
+                payload = { message: xhr.responseText || 'Resposta JSON inválida.' };
+            }
+        } else {
+            payload = { message: xhr.responseText || '' };
+        }
+
+        if (typeof payload === 'object' && payload !== null && !('ok' in payload)) {
+            payload.ok = xhr.status >= 200 && xhr.status < 300;
+            payload.status = xhr.status;
+        }
+
+        return payload;
+    };
+
     HostPanel.lookupCep = async (cep) => {
         const clean = digits(cep).slice(0, 8);
         if (clean.length !== 8) {
@@ -230,6 +336,8 @@
     };
 
     HostPanel.csrfToken = csrfToken;
+    HostPanel.formatBytes = formatBytes;
+    HostPanel.formatDuration = formatDuration;
 
     HostPanel.fetch = async (url, options = {}) => {
         const headers = {
@@ -241,18 +349,265 @@
         };
 
         const response = await fetch(url, { ...options, headers });
-        const contentType = response.headers.get('content-type') || '';
-        const payload = contentType.includes('application/json')
-            ? await response.json()
-            : { message: await response.text(), ok: response.ok };
+        return normalizeResponsePayload(response);
+    };
 
-        if (typeof payload === 'object' && payload !== null && !('ok' in payload)) {
-            payload.ok = response.ok;
-            payload.status = response.status;
+    HostPanel.upload = ({ url, method = 'POST', body = null, headers = {}, onProgress = null } = {}) => new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const startedAt = Date.now();
+
+        xhr.open(method, url, true);
+        Object.entries({
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            ...headers,
+        }).forEach(([key, value]) => {
+            xhr.setRequestHeader(key, value);
+        });
+
+        if (xhr.upload && typeof onProgress === 'function') {
+            xhr.upload.onprogress = (event) => {
+                const elapsedSeconds = Math.max((Date.now() - startedAt) / 1000, 0.1);
+                const loaded = Number(event.loaded || 0);
+                const total = Number(event.total || 0);
+                const speedBytes = loaded / elapsedSeconds;
+                const remainingSeconds = total > loaded && speedBytes > 0
+                    ? (total - loaded) / speedBytes
+                    : 0;
+
+                onProgress({
+                    loaded,
+                    total,
+                    percent: total > 0 ? (loaded / total) * 100 : 0,
+                    elapsedSeconds,
+                    speedBytes,
+                    remainingSeconds,
+                });
+            };
         }
 
-        return payload;
-    };
+        xhr.onload = () => resolve(normalizeXhrPayload(xhr));
+        xhr.onerror = () => reject(new Error('Falha de rede durante o envio.'));
+        xhr.onabort = () => reject(new Error('Envio cancelado.'));
+        xhr.send(body);
+    });
+
+    HostPanel.createUploadState = (config = {}) => ({
+        input: null,
+        files: [],
+        dragging: false,
+        isUploading: false,
+        uploadProgress: 0,
+        uploadedBytes: 0,
+        totalBytes: 0,
+        elapsedSeconds: 0,
+        remainingSeconds: 0,
+        speedBytes: 0,
+        error: '',
+        accept: config.accept || '',
+        multiple: config.multiple !== false,
+        maxFiles: Number(config.maxFiles || 0),
+        maxFileSize: Number(config.maxFileSize || 0),
+
+        attachInput(input) {
+            if (!input) {
+                this.input = null;
+                return;
+            }
+
+            this.input = input;
+
+            if (this.accept) {
+                input.setAttribute('accept', this.accept);
+            }
+
+            if (this.multiple) {
+                input.setAttribute('multiple', 'multiple');
+            } else {
+                input.removeAttribute('multiple');
+            }
+
+            this.syncInput();
+        },
+
+        syncInput() {
+            if (!this.input || typeof DataTransfer === 'undefined') {
+                return;
+            }
+
+            const transfer = new DataTransfer();
+            this.files.forEach((file) => transfer.items.add(file));
+            this.input.files = transfer.files;
+        },
+
+        setError(message = '') {
+            this.error = message;
+            return { ok: !message, message };
+        },
+
+        addFiles(fileList, { replace = false } = {}) {
+            const incoming = Array.from(fileList || []);
+            let nextFiles = replace ? [] : [...this.files];
+
+            for (const file of incoming) {
+                if (!matchesAcceptRule(file, this.accept)) {
+                    return this.setError(`Arquivo inválido: ${file.name}.`);
+                }
+
+                if (this.maxFileSize && file.size > this.maxFileSize) {
+                    return this.setError(`O arquivo ${file.name} excede o limite de ${formatBytes(this.maxFileSize)}.`);
+                }
+
+                const duplicate = nextFiles.some((candidate) => (
+                    candidate.name === file.name
+                    && candidate.size === file.size
+                    && candidate.lastModified === file.lastModified
+                ));
+
+                if (!duplicate) {
+                    nextFiles.push(file);
+                }
+            }
+
+            if (!this.multiple) {
+                nextFiles = nextFiles.slice(-1);
+            }
+
+            if (this.maxFiles && nextFiles.length > this.maxFiles) {
+                return this.setError(`Selecione no máximo ${this.maxFiles} arquivo(s).`);
+            }
+
+            this.files = nextFiles;
+            this.error = '';
+            this.syncInput();
+            return { ok: true, message: '' };
+        },
+
+        replaceFiles(fileList) {
+            return this.addFiles(fileList, { replace: true });
+        },
+
+        onInputChange(event) {
+            const result = this.replaceFiles(event?.target?.files || []);
+            if (!result.ok && result.message) {
+                HostPanel.toast(result.message, 'warning');
+            }
+        },
+
+        handleDragOver(event) {
+            event.preventDefault();
+            this.dragging = true;
+        },
+
+        handleDragLeave(event) {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+                this.dragging = false;
+            }
+        },
+
+        handleDrop(event) {
+            event.preventDefault();
+            this.dragging = false;
+            const result = this.addFiles(event?.dataTransfer?.files || []);
+            if (!result.ok && result.message) {
+                HostPanel.toast(result.message, 'warning');
+            }
+        },
+
+        openPicker() {
+            this.input?.click();
+        },
+
+        removeFile(index) {
+            this.files.splice(index, 1);
+            this.files = [...this.files];
+            this.syncInput();
+        },
+
+        clearFiles() {
+            this.files = [];
+            this.error = '';
+            if (this.input) {
+                this.input.value = '';
+            }
+            this.syncInput();
+        },
+
+        resetProgress() {
+            this.uploadProgress = 0;
+            this.uploadedBytes = 0;
+            this.totalBytes = 0;
+            this.elapsedSeconds = 0;
+            this.remainingSeconds = 0;
+            this.speedBytes = 0;
+        },
+
+        startUpload() {
+            this.isUploading = true;
+            this.resetProgress();
+            this.totalBytes = this.totalSize();
+        },
+
+        updateProgress(progress) {
+            this.uploadProgress = Number(progress?.percent || 0);
+            this.uploadedBytes = Number(progress?.loaded || 0);
+            this.totalBytes = Number(progress?.total || 0);
+            this.elapsedSeconds = Number(progress?.elapsedSeconds || 0);
+            this.remainingSeconds = Number(progress?.remainingSeconds || 0);
+            this.speedBytes = Number(progress?.speedBytes || 0);
+        },
+
+        finishUpload() {
+            this.isUploading = false;
+            this.uploadProgress = this.totalBytes > 0 ? 100 : this.uploadProgress;
+            this.remainingSeconds = 0;
+        },
+
+        failUpload() {
+            this.isUploading = false;
+        },
+
+        hasFiles() {
+            return this.files.length > 0;
+        },
+
+        totalSize() {
+            return this.files.reduce((total, file) => total + Number(file.size || 0), 0);
+        },
+
+        totalSizeLabel() {
+            return formatBytes(this.totalSize());
+        },
+
+        uploadedLabel() {
+            return formatBytes(this.uploadedBytes);
+        },
+
+        totalBytesLabel() {
+            return formatBytes(this.totalBytes);
+        },
+
+        progressLabel() {
+            return `${Math.round(this.uploadProgress)}%`;
+        },
+
+        speedLabel() {
+            return this.speedBytes > 0 ? `${formatBytes(this.speedBytes)}/s` : '--';
+        },
+
+        remainingLabel() {
+            if (!this.isUploading || !this.totalBytes) {
+                return '--';
+            }
+
+            return formatDuration(this.remainingSeconds);
+        },
+
+        elapsedLabel() {
+            return formatDuration(this.elapsedSeconds);
+        },
+    });
 
     HostPanel.toast = (message, type = 'success', options = {}) => {
         if (!message) return;

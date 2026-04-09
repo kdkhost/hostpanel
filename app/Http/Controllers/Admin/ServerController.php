@@ -52,7 +52,7 @@ class ServerController extends Controller
             'nameserver1' => 'nullable|string|max:255',
             'nameserver2' => 'nullable|string|max:255',
             'nameserver3' => 'nullable|string|max:255',
-            'datacenter'  => 'nullable|string|max:100',
+            'dc_name'     => 'nullable|string|max:100',
             'location'    => 'nullable|string|max:100',
             'api_hash'    => 'nullable|string',
         ];
@@ -97,8 +97,13 @@ class ServerController extends Controller
             'server_group_id', 'name', 'hostname', 'ip_address', 'ip_address_secondary',
             'port', 'type', 'module', 'username', 'api_key', 'api_hash', 'password', 'max_accounts',
             'secure', 'active', 'nameserver1', 'nameserver2', 'nameserver3',
-            'datacenter', 'location',
+            'dc_name', 'location',
         ]);
+
+        if (isset($data['dc_name'])) {
+            $data['datacenter'] = $data['dc_name'];
+            unset($data['dc_name']);
+        }
 
         $data['module'] = $this->normalizeModule($data['module'] ?? null);
         $data['username'] = ServerModuleManager::requiresUsername($data['module']) && !empty($data['username'])
@@ -128,8 +133,13 @@ class ServerController extends Controller
         $data = $request->only([
             'server_group_id', 'name', 'hostname', 'ip_address', 'ip_address_secondary',
             'port', 'type', 'module', 'username', 'max_accounts', 'secure', 'active',
-            'nameserver1', 'nameserver2', 'nameserver3', 'datacenter', 'location',
+            'nameserver1', 'nameserver2', 'nameserver3', 'dc_name', 'location',
         ]);
+
+        if (isset($data['dc_name'])) {
+            $data['datacenter'] = $data['dc_name'];
+            unset($data['dc_name']);
+        }
 
         $data['module'] = $this->normalizeModule($data['module'] ?? null);
         $data['username'] = ServerModuleManager::requiresUsername($data['module']) && !empty($data['username'])

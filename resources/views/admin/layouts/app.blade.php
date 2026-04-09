@@ -415,6 +415,8 @@
 {{-- Summernote --}}
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/summernote-bs5.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/summernote@0.9.0/dist/lang/summernote-pt-BR.min.js"></script>
+{{-- Alpine.js Mask plugin (deve vir ANTES do Alpine core) --}}
+<script src="https://cdn.jsdelivr.net/npm/@alpinejs/mask@3.x.x/dist/cdn.min.js" defer></script>
 {{-- Alpine.js para reatividade leve --}}
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 {{-- Chart.js --}}

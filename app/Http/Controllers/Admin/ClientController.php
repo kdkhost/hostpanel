@@ -95,7 +95,8 @@ class ClientController extends Controller
 
         $data = $request->only([
             'name', 'email', 'document_type', 'document_number', 'phone', 'mobile',
-            'whatsapp', 'company_name', 'address', 'address_number', 'address_complement',
+            'whatsapp', 'company_name', 'company_position', 'birth_date',
+            'address', 'address_number', 'address_complement',
             'neighborhood', 'city', 'state', 'postcode', 'country', 'status', 'notes',
         ]);
 
@@ -182,5 +183,37 @@ class ClientController extends Controller
             'message' => 'Status alterado para ' . ($newStatus === 'active' ? 'Ativo' : 'Bloqueado'),
             'status'  => $newStatus,
         ]);
+    }
+
+    public function uploadAvatar(Request $request, Client $client): JsonResponse
+    {
+        $request->validate([
+            'avatar' => 'required|image|mimes:jpg,jpeg,png,gif,webp|max:5120',
+        ]);
+
+        if ($client->avatar && \Storage::disk('public')->exists($client->avatar)) {
+            \Storage::disk('public')->delete($client->avatar);
+        }
+
+        $path = $request->file('avatar')->store('avatars/clients', 'public');
+        $client->update(['avatar' => $path]);
+
+        activity()->causedBy(auth('admin')->user())->on($client)->log('Avatar do cliente atualizado');
+
+        return response()->json([
+            'message' => 'Foto atualizada com sucesso!',
+            'avatar_url' => \Storage::url($path),
+        ]);
+    }
+
+    public function lookupCep(string $cep): JsonResponse
+    {
+        $result = app(\App\Services\ViaCepService::class)->lookup($cep);
+
+        if (!$result) {
+            return response()->json(['message' => 'CEP não encontrado.'], 404);
+        }
+
+        return response()->json($result);
     }
 }

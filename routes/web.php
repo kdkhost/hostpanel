@@ -205,6 +205,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::prefix('clientes')->name('clients.')->group(function () {
             Route::get('/',                        [Admin\ClientController::class, 'index'])->name('index');
             Route::post('/',                       [Admin\ClientController::class, 'store'])->name('store');
+            Route::get('/cep/{cep}',               [Admin\ClientController::class, 'lookupCep'])->name('cep');
             Route::get('/{client}',                [Admin\ClientController::class, 'show'])->name('show');
             Route::get('/{client}/editar',         [Admin\ClientController::class, 'edit'])->name('edit');
             Route::put('/{client}',                [Admin\ClientController::class, 'update'])->name('update');
@@ -212,6 +213,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/{client}/impersonar',    [Admin\ClientController::class, 'impersonate'])->name('impersonate');
             Route::post('/{client}/credito',       [Admin\ClientController::class, 'addCredit'])->name('credit');
             Route::post('/{client}/status',        [Admin\ClientController::class, 'toggleStatus'])->name('status');
+            Route::post('/{client}/avatar',        [Admin\ClientController::class, 'uploadAvatar'])->name('avatar');
         });
 
         // Serviços

@@ -277,8 +277,15 @@ class HomeController extends Controller
             $rules['password'] = 'required_if:account_type,new|string|min:6|max:100';
             $rules['first_name'] = 'required_if:account_type,new|string|max:50';
             $rules['last_name'] = 'required_if:account_type,new|string|max:50';
-            $rules['phone'] = 'nullable|string|max:20';
-            $rules['country'] = 'nullable|string|max:2';
+            $rules['phone'] = 'required_if:account_type,new|string|max:20';
+            $rules['document'] = 'required_if:account_type,new|string|max:18';
+            $rules['postal_code'] = 'required_if:account_type,new|string|max:9';
+            $rules['address1'] = 'required_if:account_type,new|string|max:255';
+            $rules['address2'] = 'required_if:account_type,new|string|max:50';
+            $rules['address3'] = 'nullable|string|max:100';
+            $rules['neighborhood'] = 'required_if:account_type,new|string|max:100';
+            $rules['city'] = 'required_if:account_type,new|string|max:100';
+            $rules['state'] = 'required_if:account_type,new|string|max:2';
         }
 
         $validated = $request->validate($rules);
@@ -302,14 +309,29 @@ class HomeController extends Controller
                         return back()->withErrors(['email' => 'Este email já está cadastrado. Faça login.'])->withInput();
                     }
 
+                    // Detectar tipo de documento
+                    $rawDocument = preg_replace('/[^0-9]/', '', $validated['document'] ?? '');
+                    $documentType = strlen($rawDocument) <= 11 ? 'cpf' : 'cnpj';
+
                     $client = \App\Models\Client::create([
                         'email' => $validated['email'],
                         'password' => bcrypt($validated['password']),
                         'first_name' => $validated['first_name'],
                         'last_name' => $validated['last_name'],
                         'phone' => $validated['phone'] ?? null,
-                        'country' => $validated['country'] ?? 'BR',
+                        'document_type' => $documentType,
+                        'document_number' => $rawDocument,
+                        'address' => $validated['address1'] ?? null,
+                        'address_number' => $validated['address2'] ?? null,
+                        'address_complement' => $validated['address3'] ?? null,
+                        'neighborhood' => $validated['neighborhood'] ?? null,
+                        'city' => $validated['city'] ?? null,
+                        'state' => $validated['state'] ?? null,
+                        'postcode' => $validated['postal_code'] ?? null,
+                        'country' => 'BR',
                         'status' => 'active',
+                        'terms_accepted' => true,
+                        'terms_accepted_at' => now(),
                     ]);
 
                     auth('client')->login($client);

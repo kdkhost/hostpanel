@@ -186,51 +186,162 @@ $isLoggedIn = auth('client')->check();
                         </div>
 
                         {{-- Form Criar Conta --}}
-                        <div x-show="accountType === 'new'" x-cloak>
+                        <div x-show="accountType === 'new'" x-cloak x-data="{ cep: '', cepLoading: false, cepError: '', address: { logradouro: '', bairro: '', cidade: '', uf: '', ibge: '' }, cpfCnpj: '' }">
                             <div class="space-y-4">
+                                {{-- Nome e Sobrenome --}}
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="block text-sm font-semibold text-gray-700 mb-1">Nome</label>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-1">Nome <span class="text-red-500">*</span></label>
                                         <input type="text" name="first_name" required
-                                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none"
+                                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
                                                placeholder="João">
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-semibold text-gray-700 mb-1">Sobrenome</label>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-1">Sobrenome <span class="text-red-500">*</span></label>
                                         <input type="text" name="last_name" required
-                                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none"
+                                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
                                                placeholder="Silva">
                                     </div>
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-semibold text-gray-700 mb-1">Email</label>
-                                    <input type="email" name="email" required
-                                           class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none"
-                                           placeholder="seu@email.com">
+
+                                {{-- Email e CPF/CNPJ --}}
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-1">Email <span class="text-red-500">*</span></label>
+                                        <input type="email" name="email" required
+                                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
+                                               placeholder="seu@email.com">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-1">CPF ou CNPJ <span class="text-red-500">*</span></label>
+                                        <input type="text" name="document" required
+                                               x-model="cpfCnpj"
+                                               @input="cpfCnpj = formatCpfCnpj($event.target.value)"
+                                               maxlength="18"
+                                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
+                                               placeholder="000.000.000-00 ou 00.000.000/0000-00">
+                                    </div>
                                 </div>
+
+                                {{-- Telefone e Senha --}}
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="block text-sm font-semibold text-gray-700 mb-1">Senha</label>
-                                        <input type="password" name="password" required minlength="6"
-                                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none"
-                                               placeholder="Mínimo 6 caracteres">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-semibold text-gray-700 mb-1">Telefone</label>
-                                        <input type="tel" name="phone"
-                                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none"
+                                        <label class="block text-sm font-semibold text-gray-700 mb-1">Telefone <span class="text-red-500">*</span></label>
+                                        <input type="tel" name="phone" required
+                                               x-model="phone"
+                                               @input="phone = formatPhone($event.target.value)"
+                                               maxlength="15"
+                                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
                                                placeholder="(11) 99999-9999">
                                     </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-gray-700 mb-1">Senha <span class="text-red-500">*</span></label>
+                                        <input type="password" name="password" required minlength="6"
+                                               class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
+                                               placeholder="Mínimo 6 caracteres">
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block text-sm font-semibold text-gray-700 mb-1">País</label>
-                                    <select name="country" class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none">
-                                        <option value="BR">Brasil</option>
-                                        <option value="US">Estados Unidos</option>
-                                        <option value="PT">Portugal</option>
-                                        <option value="AR">Argentina</option>
-                                        <option value="OTHER">Outro</option>
-                                    </select>
+
+                                <div class="border-t border-gray-200 pt-4 mt-4">
+                                    <h4 class="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                        <i class="bi bi-geo-alt text-blue-600"></i> Endereço de Cobrança
+                                    </h4>
+
+                                    {{-- CEP --}}
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                        <div class="md:col-span-1">
+                                            <label class="block text-sm font-semibold text-gray-700 mb-1">CEP <span class="text-red-500">*</span></label>
+                                            <div class="relative">
+                                                <input type="text" name="postal_code" required
+                                                       x-model="cep"
+                                                       @input="cep = formatCep($event.target.value)"
+                                                       @blur="searchCep()"
+                                                       maxlength="9"
+                                                       class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
+                                                       placeholder="00000-000">
+                                                <div x-show="cepLoading" class="absolute right-3 top-3">
+                                                    <i class="bi bi-arrow-repeat animate-spin text-blue-600"></i>
+                                                </div>
+                                            </div>
+                                            <p x-show="cepError" x-text="cepError" class="text-red-500 text-xs mt-1"></p>
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label class="block text-sm font-semibold text-gray-700 mb-1">Logradouro <span class="text-red-500">*</span></label>
+                                            <input type="text" name="address1" required
+                                                   x-model="address.logradouro"
+                                                   class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition bg-gray-50"
+                                                   placeholder="Rua, Avenida, etc.">
+                                        </div>
+                                    </div>
+
+                                    {{-- Número e Complemento --}}
+                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-1">Número <span class="text-red-500">*</span></label>
+                                            <input type="text" name="address2" required
+                                                   class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
+                                                   placeholder="123">
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <label class="block text-sm font-semibold text-gray-700 mb-1">Complemento <span class="text-gray-400 font-normal">(opcional)</span></label>
+                                            <input type="text" name="address3"
+                                                   class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
+                                                   placeholder="Apto, Sala, Bloco, etc.">
+                                        </div>
+                                    </div>
+
+                                    {{-- Bairro, Cidade e Estado --}}
+                                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-1">Bairro <span class="text-red-500">*</span></label>
+                                            <input type="text" name="neighborhood" required
+                                                   x-model="address.bairro"
+                                                   class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition bg-gray-50"
+                                                   placeholder="Bairro">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-1">Cidade <span class="text-red-500">*</span></label>
+                                            <input type="text" name="city" required
+                                                   x-model="address.cidade"
+                                                   class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition bg-gray-50"
+                                                   placeholder="Cidade">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-semibold text-gray-700 mb-1">Estado <span class="text-red-500">*</span></label>
+                                            <select name="state" required
+                                                    x-model="address.uf"
+                                                    class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition bg-gray-50">
+                                                <option value="">Selecione</option>
+                                                <option value="AC">Acre</option>
+                                                <option value="AL">Alagoas</option>
+                                                <option value="AP">Amapá</option>
+                                                <option value="AM">Amazonas</option>
+                                                <option value="BA">Bahia</option>
+                                                <option value="CE">Ceará</option>
+                                                <option value="DF">Distrito Federal</option>
+                                                <option value="ES">Espírito Santo</option>
+                                                <option value="GO">Goiás</option>
+                                                <option value="MA">Maranhão</option>
+                                                <option value="MT">Mato Grosso</option>
+                                                <option value="MS">Mato Grosso do Sul</option>
+                                                <option value="MG">Minas Gerais</option>
+                                                <option value="PA">Pará</option>
+                                                <option value="PB">Paraíba</option>
+                                                <option value="PR">Paraná</option>
+                                                <option value="PE">Pernambuco</option>
+                                                <option value="PI">Piauí</option>
+                                                <option value="RJ">Rio de Janeiro</option>
+                                                <option value="RN">Rio Grande do Norte</option>
+                                                <option value="RS">Rio Grande do Sul</option>
+                                                <option value="RO">Rondônia</option>
+                                                <option value="RR">Roraima</option>
+                                                <option value="SC">Santa Catarina</option>
+                                                <option value="SP">São Paulo</option>
+                                                <option value="SE">Sergipe</option>
+                                                <option value="TO">Tocantins</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -400,9 +511,73 @@ $isLoggedIn = auth('client')->check();
 
 @push('scripts')
 <script>
+// Funções auxiliares de formatação
+function formatCpfCnpj(value) {
+    value = value.replace(/\D/g, '');
+    if (value.length <= 11) {
+        // CPF
+        return value.replace(/(\d{3})(\d)/, '$1.$2')
+                    .replace(/(\d{3})(\d)/, '$1.$2')
+                    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    } else {
+        // CNPJ
+        return value.replace(/(\d{2})(\d)/, '$1.$2')
+                    .replace(/(\d{3})(\d)/, '$1.$2')
+                    .replace(/(\d{3})(\d)/, '$1/$2')
+                    .replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+    }
+}
+
+function formatPhone(value) {
+    value = value.replace(/\D/g, '');
+    if (value.length <= 10) {
+        // Fixo
+        return value.replace(/(\d{2})(\d)/, '($1) $2')
+                    .replace(/(\d{4})(\d)/, '$1-$2');
+    } else {
+        // Celular
+        return value.replace(/(\d{2})(\d)/, '($1) $2')
+                    .replace(/(\d{5})(\d)/, '$1-$2');
+    }
+}
+
+function formatCep(value) {
+    return value.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2');
+}
+
+async function searchCep() {
+    const rawCep = this.cep.replace(/\D/g, '');
+    if (rawCep.length !== 8) return;
+
+    this.cepLoading = true;
+    this.cepError = '';
+
+    try {
+        const response = await fetch(`{{ route('viacep') }}/${rawCep}`);
+        const data = await response.json();
+
+        if (data.erro) {
+            this.cepError = 'CEP não encontrado';
+            return;
+        }
+
+        this.address = {
+            logradouro: data.logradouro || '',
+            bairro: data.bairro || '',
+            cidade: data.localidade || '',
+            uf: data.uf || '',
+            ibge: data.ibge || ''
+        };
+    } catch (e) {
+        this.cepError = 'Erro ao buscar CEP';
+    } finally {
+        this.cepLoading = false;
+    }
+}
+
 function checkoutFlow(isLoggedIn, items) {
     return {
-        accountType: 'existing', // 'existing' ou 'new'
+        accountType: 'existing',
         items: items.map(item => ({ ...item, domain: item.domain || '' })),
         couponCode: '',
         couponValid: false,

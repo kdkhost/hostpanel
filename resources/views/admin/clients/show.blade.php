@@ -144,7 +144,7 @@
             <div class="card">
                 <div class="card-header bg-white d-flex justify-content-between">
                     <span class="fw-semibold">Serviços</span>
-                    <button class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Adicionar</button>
+                    <a href="{{ route('admin.services.index') }}?client_id={{ $client->id }}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Novo Serviço</a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -175,7 +175,7 @@
             <div class="card">
                 <div class="card-header bg-white d-flex justify-content-between">
                     <span class="fw-semibold">Faturas</span>
-                    <button class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Nova Fatura</button>
+                    <a href="{{ route('admin.invoices.index') }}?client_id={{ $client->id }}" class="btn btn-sm btn-primary"><i class="bi bi-plus-lg me-1"></i>Nova Fatura</a>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -524,7 +524,13 @@ function adminClientShow() {
                     const res = JSON.parse(xhr.responseText);
                     if (xhr.status >= 200 && xhr.status < 300) {
                         HostPanel.toast(res.message || 'Foto atualizada!');
-                        if (res.avatar_url) this.avatarPreview = res.avatar_url;
+                        // Testar se a URL do servidor é acessível, senão manter preview local
+                        if (res.avatar_url) {
+                            const img = new Image();
+                            img.onload = () => { this.avatarPreview = res.avatar_url; };
+                            img.onerror = () => { /* manter preview local do FileReader */ };
+                            img.src = res.avatar_url;
+                        }
                     } else {
                         HostPanel.toast(res.message || 'Erro no upload.', 'danger');
                     }

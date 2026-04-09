@@ -353,6 +353,7 @@
 
 <div class="modal fade" id="editServerModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content shadow-lg border-0">
             <div class="modal-header border-0 bg-light pb-0">
                 <div class="w-100">
                     <div class="d-flex justify-content-between align-items-center mb-3">

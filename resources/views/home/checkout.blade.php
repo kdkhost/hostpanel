@@ -186,7 +186,13 @@ $isLoggedIn = auth('client')->check();
                         </div>
 
                         {{-- Form Criar Conta --}}
-                        <div x-show="accountType === 'new'" x-cloak x-data="{ cep: '', cepLoading: false, cepError: '', address: { logradouro: '', bairro: '', cidade: '', uf: '', ibge: '' }, cpfCnpj: '' }">
+                        <div x-show="accountType === 'new'" x-cloak x-data="{ cep: '', cepLoading: false, cepError: '', address: { logradouro: '', bairro: '', cidade: '', uf: '', ibge: '' }, cpfCnpj: '', phone: '' }"
+                             x-init="$watch('cep', value => {
+                                 const rawCep = value.replace(/\D/g, '');
+                                 if (rawCep.length === 8) {
+                                     searchCep(rawCep);
+                                 }
+                             })">
                             <div class="space-y-4">
                                 {{-- Nome e Sobrenome --}}
                                 <div class="grid grid-cols-2 gap-4">
@@ -255,7 +261,6 @@ $isLoggedIn = auth('client')->check();
                                                 <input type="text" name="postal_code" required
                                                        x-model="cep"
                                                        @input="cep = formatCep($event.target.value)"
-                                                       @blur="searchCep()"
                                                        maxlength="9"
                                                        class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
                                                        placeholder="00000-000">
@@ -279,6 +284,7 @@ $isLoggedIn = auth('client')->check();
                                         <div>
                                             <label class="block text-sm font-semibold text-gray-700 mb-1">Número <span class="text-red-500">*</span></label>
                                             <input type="text" name="address2" required
+                                                   x-ref="numero"
                                                    class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100 transition"
                                                    placeholder="123">
                                         </div>
@@ -545,8 +551,8 @@ function formatCep(value) {
     return value.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2');
 }
 
-async function searchCep() {
-    const rawCep = this.cep.replace(/\D/g, '');
+async function searchCep(cepValue = null) {
+    const rawCep = cepValue || this.cep.replace(/\D/g, '');
     if (rawCep.length !== 8) return;
 
     this.cepLoading = true;
@@ -568,6 +574,14 @@ async function searchCep() {
             uf: data.uf || '',
             ibge: data.ibge || ''
         };
+
+        // Focar no campo número após preencher o endereço
+        setTimeout(() => {
+            const numeroInput = document.querySelector('[name="address2"]');
+            if (numeroInput) {
+                numeroInput.focus();
+            }
+        }, 100);
     } catch (e) {
         this.cepError = 'Erro ao buscar CEP';
     } finally {

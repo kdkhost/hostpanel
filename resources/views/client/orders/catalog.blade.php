@@ -15,7 +15,7 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-            @foreach($group->activeProducts as $product)
+            @foreach($group->products as $product)
             <div class="bg-white rounded-2xl border {{ $product->featured ? 'border-blue-400 shadow-lg shadow-blue-100' : 'border-gray-100 shadow-sm' }} overflow-hidden flex flex-col">
                 @if($product->featured)
                 <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center py-1.5 text-xs font-bold tracking-wider uppercase">
@@ -130,7 +130,7 @@
 function catalogPage() {
     return {
         cart: [], coupon: '',
-        selectedCycles: @json(collect($groups)->flatMap->activeProducts->mapWithKeys(fn($p) => [$p->id => array_key_first($p->prices ?? ['monthly' => 0])])),
+        selectedCycles: @json(collect($groups)->flatMap->products->mapWithKeys(fn($p) => [$p->id => array_key_first($p->prices ?? ['monthly' => 0])])),
 
         addToCart(id, name, cycle) {
             const labels = {monthly:'Mensal',quarterly:'Trimestral',semiannually:'Semestral',annually:'Anual',biennially:'Bienal',free:'Grátis'};

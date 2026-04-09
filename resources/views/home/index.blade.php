@@ -91,7 +91,7 @@
             <div class="mb-16">
                 <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">{{ $group->name }}</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    @foreach($group->activeProducts as $product)
+                    @foreach($group->products as $product)
                     @php $price = $product->prices['monthly'] ?? null; @endphp
                     <div class="bg-white rounded-2xl border {{ $product->featured ? 'border-blue-400 shadow-2xl ring-2 ring-blue-200' : 'border-gray-100 shadow-sm' }} overflow-hidden card-hover flex flex-col relative">
                         @if($product->featured)

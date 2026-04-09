@@ -186,11 +186,59 @@ $isLoggedIn = auth('client')->check();
                         </div>
 
                         {{-- Form Criar Conta --}}
-                        <div x-show="accountType === 'new'" x-cloak x-data="{ cep: '', cepLoading: false, cepError: '', address: { logradouro: '', bairro: '', cidade: '', uf: '', ibge: '' }, cpfCnpj: '', phone: '' }"
+                        <div x-show="accountType === 'new'" x-cloak
+                             x-data="{
+                                 cep: '',
+                                 cepLoading: false,
+                                 cepError: '',
+                                 address: { logradouro: '', bairro: '', cidade: '', uf: '', ibge: '' },
+                                 cpfCnpj: '',
+                                 phone: '',
+
+                                 async searchCep(cepValue = null) {
+                                     const rawCep = cepValue || this.cep.replace(/\D/g, '');
+                                     if (rawCep.length !== 8) return;
+
+                                     this.cepLoading = true;
+                                     this.cepError = '';
+
+                                     try {
+                                         const response = await fetch(`/api/viacep/${rawCep}`);
+                                         const data = await response.json();
+
+                                         if (data.erro) {
+                                             this.cepError = 'CEP não encontrado';
+                                             this.cepLoading = false;
+                                             return;
+                                         }
+
+                                         this.address = {
+                                             logradouro: data.logradouro || '',
+                                             bairro: data.bairro || '',
+                                             cidade: data.localidade || '',
+                                             uf: data.uf || '',
+                                             ibge: data.ibge || ''
+                                         };
+
+                                         // Focar no campo número após preencher endereço
+                                         setTimeout(() => {
+                                             const numeroInput = document.querySelector('[name=\"address2\"]');
+                                             if (numeroInput) {
+                                                 numeroInput.focus();
+                                                 numeroInput.select();
+                                             }
+                                         }, 100);
+                                     } catch (e) {
+                                         this.cepError = 'Erro ao buscar CEP';
+                                     } finally {
+                                         this.cepLoading = false;
+                                     }
+                                 }
+                             }"
                              x-init="$watch('cep', value => {
                                  const rawCep = value.replace(/\D/g, '');
                                  if (rawCep.length === 8) {
-                                     searchCep(rawCep);
+                                     this.searchCep(rawCep);
                                  }
                              })">
                             <div class="space-y-4">
@@ -549,44 +597,6 @@ function formatPhone(value) {
 
 function formatCep(value) {
     return value.replace(/\D/g, '').replace(/(\d{5})(\d)/, '$1-$2');
-}
-
-async function searchCep(cepValue = null) {
-    const rawCep = cepValue || this.cep.replace(/\D/g, '');
-    if (rawCep.length !== 8) return;
-
-    this.cepLoading = true;
-    this.cepError = '';
-
-    try {
-        const response = await fetch(`/api/viacep/${rawCep}`);
-        const data = await response.json();
-
-        if (data.erro) {
-            this.cepError = 'CEP não encontrado';
-            return;
-        }
-
-        this.address = {
-            logradouro: data.logradouro || '',
-            bairro: data.bairro || '',
-            cidade: data.localidade || '',
-            uf: data.uf || '',
-            ibge: data.ibge || ''
-        };
-
-        // Focar no campo número após preencher o endereço
-        setTimeout(() => {
-            const numeroInput = document.querySelector('[name="address2"]');
-            if (numeroInput) {
-                numeroInput.focus();
-            }
-        }, 100);
-    } catch (e) {
-        this.cepError = 'Erro ao buscar CEP';
-    } finally {
-        this.cepLoading = false;
-    }
 }
 
 function checkoutFlow(isLoggedIn, items) {

@@ -211,7 +211,7 @@ class ServerController extends Controller
         $isStale = !$lastCheckedAt || $lastCheckedAt->lt(now()->subMinutes(15));
 
         return response()->json([
-            'server' => $server->only(['id', 'name', 'hostname', 'status', 'last_check_at']),
+            'server' => $server->only(['id', 'name', 'hostname', 'status', 'last_check_at', 'cpanel_version', 'current_accounts']),
             'health' => $latest,
             'cpu' => $latest?->cpu_usage,
             'ram' => $latest?->ram_usage,
@@ -225,6 +225,8 @@ class ServerController extends Controller
             'network_out' => $latest?->network_out_mbps,
             'network_status' => $networkStatus,
             'uptime' => $latest?->uptime_human,
+            'cpanel_version' => $server->cpanel_version,
+            'account_count' => $latest?->account_count ?? $server->current_accounts,
             'checked_at' => $lastCheckedAt?->diffForHumans(),
             'last_checked_at' => $lastCheckedAt?->toIso8601String(),
             'minutes_since_check' => $lastCheckedAt?->diffInMinutes(now()),

@@ -79,15 +79,30 @@
                         <div class="p-3 border rounded-3">
                             <div class="d-flex justify-content-between align-items-baseline mb-2">
                                 <span class="small fw-semibold text-muted"><i class="bi bi-memory me-1"></i>RAM</span>
-                                <span class="fw-bold" :class="(health?.ram||0)>90?'text-danger':(health?.ram||0)>70?'text-warning':'text-success'"
-                                      x-text="health?.ram != null ? health.ram + '%' : '—'"></span>
+                                <template x-if="health?.ram != null">
+                                    <span class="fw-bold" :class="(health.ram)>90?'text-danger':(health.ram)>70?'text-warning':'text-success'"
+                                          x-text="health.ram + '%'"></span>
+                                </template>
+                                <template x-if="health?.ram == null">
+                                    <span class="badge bg-light text-muted" title="WHM API não expõe memória. Requer SSH.">N/A</span>
+                                </template>
                             </div>
                             <div class="progress" style="height:8px">
                                 <div class="progress-bar transition-all"
                                      :class="(health?.ram||0)>90?'bg-danger':(health?.ram||0)>70?'bg-warning':'bg-success'"
                                      :style="'width:' + (health?.ram || 0) + '%'"></div>
                             </div>
-                            <div class="text-muted mt-1" style="font-size:.72rem">Uptime: <span x-text="health?.uptime || '—'"></span></div>
+                            <div class="text-muted mt-1" style="font-size:.72rem">
+                                <template x-if="health?.uptime && health?.uptime !== '-'">
+                                    <span>Uptime: <span x-text="health.uptime"></span></span>
+                                </template>
+                                <template x-if="(!health?.uptime || health?.uptime === '-') && health?.cpanel_version">
+                                    <span>cPanel: <span x-text="health.cpanel_version"></span></span>
+                                </template>
+                                <template x-if="(!health?.uptime || health?.uptime === '-') && !health?.cpanel_version">
+                                    <span>Uptime: —</span>
+                                </template>
+                            </div>
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -103,7 +118,7 @@
                                      :style="'width:' + (health?.disk || 0) + '%'"></div>
                             </div>
                             <div class="text-muted mt-1" style="font-size:.72rem">
-                                Contas: <span x-text="health?.health?.account_count ?? '—'"></span>
+                                Contas: <span x-text="health?.account_count != null ? health.account_count : '—'"></span>
                             </div>
                         </div>
                     </div>
@@ -164,7 +179,10 @@
                 <div class="mt-3">
                     <div class="d-flex justify-content-between small mb-1">
                         <span class="fw-semibold">Capacidade de Contas Hospedadas</span>
-                        <span class="text-muted">{{ $server->services_count ?? 0 }} / {{ $server->max_accounts ?? '∞' }}</span>
+                        <span class="text-muted">
+                            <span x-text="health?.account_count ?? '{{ $server->current_accounts ?? 0 }}'"></span>
+                            / {{ $server->max_accounts ?? '∞' }}
+                        </span>
                     </div>
                     @if($server->max_accounts)
                     @php $pct = min(100, (($server->services_count ?? 0) / $server->max_accounts) * 100); @endphp

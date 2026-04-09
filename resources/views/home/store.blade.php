@@ -1,45 +1,14 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loja — {{ config('app.name') }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>[x-cloak]{display:none}</style>
-</head>
-<body class="bg-gray-50 text-gray-900">
+@extends('home.layouts.app')
 
-{{-- Navbar --}}
-<nav class="bg-white shadow-sm sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16 gap-4">
-        <a href="{{ route('home') }}" class="flex items-center gap-2 font-extrabold text-gray-900 text-lg shrink-0">
-            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"><i class="bi bi-server text-white text-sm"></i></div>
-            {{ config('app.name') }}
-        </a>
-        <div class="hidden md:flex items-center gap-6 text-sm font-semibold text-gray-600">
-            <a href="{{ route('store') }}" class="text-blue-600">Loja</a>
-            <a href="{{ route('plans') }}" class="hover:text-gray-900">Planos</a>
-            <a href="{{ route('domain.search') }}" class="hover:text-gray-900">Domínios</a>
-            <a href="{{ route('kb') }}" class="hover:text-gray-900">Suporte</a>
-            <a href="{{ route('contact') }}" class="hover:text-gray-900">Contato</a>
-        </div>
-        <div class="flex items-center gap-2">
-            <a href="{{ route('cart') }}" class="relative p-2 text-gray-500 hover:text-blue-600">
-                <i class="bi bi-cart3 text-xl"></i>
-                <span id="cart-badge" class="hidden absolute -top-0.5 -right-0.5 w-4 h-4 bg-blue-600 text-white text-xs rounded-full flex items-center justify-center font-bold"></span>
-            </a>
-            @auth('client')
-            <a href="{{ route('client.dashboard') }}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-lg">Painel</a>
-            @else
-            <a href="{{ route('client.login') }}" class="text-gray-600 hover:text-gray-900 text-sm font-semibold">Entrar</a>
-            <a href="{{ route('client.register') }}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-lg">Cadastrar</a>
-            @endauth
-        </div>
-    </div>
-</nav>
+@section('title', 'Loja — ' . config('app.name'))
+@section('meta-description', 'Escolha seu plano de hospedagem. Soluções para todos os tamanhos de projetos.')
 
+@push('head')
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>[x-cloak]{display:none}</style>
+@endpush
+
+@section('content')
 {{-- Hero --}}
 <section class="bg-gradient-to-br from-slate-900 to-blue-900 text-white py-14">
     <div class="max-w-3xl mx-auto px-4 text-center">
@@ -145,15 +114,9 @@
         </form>
     </div>
 </section>
+@endsection
 
-<footer class="bg-slate-950 text-slate-500 py-8 text-center text-sm">
-    &copy; {{ date('Y') }} {{ config('app.name') }}. Todos os direitos reservados.
-    <span class="mx-2">·</span>
-    <a href="{{ route('page', 'termos-de-uso') }}" class="hover:text-slate-300">Termos</a>
-    <span class="mx-2">·</span>
-    <a href="{{ route('page', 'privacidade') }}" class="hover:text-slate-300">Privacidade</a>
-</footer>
-
+@push('scripts')
 <script>
 // Sincronizar badge do carrinho com localStorage
 const cart = JSON.parse(localStorage.getItem('hostpanel_cart') || '[]');
@@ -163,5 +126,4 @@ if (badge && cart.length > 0) {
     badge.classList.remove('hidden');
 }
 </script>
-</body>
-</html>
+@endpush

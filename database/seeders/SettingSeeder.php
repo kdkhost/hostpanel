@@ -77,6 +77,12 @@ class SettingSeeder extends Seeder
             ['group' => 'affiliate', 'key' => 'affiliate.min_commission',      'value' => '1',          'type' => 'decimal', 'label' => 'Comissão Mínima (R$)',   'description' => 'Valor mínimo de comissão por fatura'],
             ['group' => 'affiliate', 'key' => 'affiliate.auto_approve',        'value' => '0',          'type' => 'boolean', 'label' => 'Auto-aprovar Comissões', 'description' => 'Se ativo, comissões são creditadas automaticamente'],
             ['group' => 'affiliate', 'key' => 'affiliate.only_first_invoice',  'value' => '0',          'type' => 'boolean', 'label' => 'Apenas Primeira Fatura', 'description' => 'Gerar comissão apenas na primeira compra do indicado'],
+
+            // reCAPTCHA v3
+            ['group' => 'security', 'key' => 'recaptcha.enabled',       'value' => '0',          'type' => 'boolean',   'label' => 'Habilitar reCAPTCHA v3',   'description' => 'Proteção contra spam no formulário de contato'],
+            ['group' => 'security', 'key' => 'recaptcha.site_key',      'value' => '',           'type' => 'string',    'label' => 'reCAPTCHA Site Key',       'description' => 'Chave pública do Google reCAPTCHA v3'],
+            ['group' => 'security', 'key' => 'recaptcha.secret_key',    'value' => '',           'type' => 'encrypted', 'label' => 'reCAPTCHA Secret Key',     'description' => 'Chave secreta do Google reCAPTCHA v3'],
+            ['group' => 'security', 'key' => 'recaptcha.score_threshold','value' => '0.5',       'type' => 'decimal',   'label' => 'Score Mínimo',             'description' => 'Score mínimo para passar na verificação (0.0 a 1.0)'],
         ];
 
         foreach ($settings as $s) {

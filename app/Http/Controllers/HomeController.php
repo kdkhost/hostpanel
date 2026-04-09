@@ -154,8 +154,11 @@ class HomeController extends Controller
 
     public function contactSubmit(Request $request)
     {
-        // Validar reCAPTCHA v3 se configurado
-        if (config('services.recaptcha.secret_key')) {
+        // Validar reCAPTCHA v3 se habilitado no painel admin
+        $recaptchaEnabled = Setting::get('recaptcha.enabled', false);
+        $recaptchaSecret = Setting::get('recaptcha.secret_key', '');
+
+        if ($recaptchaEnabled && $recaptchaSecret) {
             $token = $request->input('recaptcha_token');
 
             if (!$token) {
@@ -163,13 +166,13 @@ class HomeController extends Controller
             }
 
             $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-                'secret'   => config('services.recaptcha.secret_key'),
+                'secret'   => $recaptchaSecret,
                 'response' => $token,
                 'remoteip' => $request->ip(),
             ]);
 
             $result = $response->json();
-            $scoreThreshold = config('services.recaptcha.score_threshold', 0.5);
+            $scoreThreshold = (float) Setting::get('recaptcha.score_threshold', 0.5);
 
             if (!$result['success'] || ($result['score'] ?? 0) < $scoreThreshold) {
                 return back()->withErrors(['recaptcha' => 'Falha na verificação de segurança. Tente novamente.'])->withInput();

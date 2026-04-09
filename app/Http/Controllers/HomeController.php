@@ -11,6 +11,7 @@ use App\Models\Setting;
 use App\Services\AffiliateService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Http;
 use App\Mail\ContactFormMail;
 
 class HomeController extends Controller
@@ -153,6 +154,28 @@ class HomeController extends Controller
 
     public function contactSubmit(Request $request)
     {
+        // Validar reCAPTCHA v3 se configurado
+        if (config('services.recaptcha.secret_key')) {
+            $token = $request->input('recaptcha_token');
+
+            if (!$token) {
+                return back()->withErrors(['recaptcha' => 'Verificação de segurança necessária.'])->withInput();
+            }
+
+            $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+                'secret'   => config('services.recaptcha.secret_key'),
+                'response' => $token,
+                'remoteip' => $request->ip(),
+            ]);
+
+            $result = $response->json();
+            $scoreThreshold = config('services.recaptcha.score_threshold', 0.5);
+
+            if (!$result['success'] || ($result['score'] ?? 0) < $scoreThreshold) {
+                return back()->withErrors(['recaptcha' => 'Falha na verificação de segurança. Tente novamente.'])->withInput();
+            }
+        }
+
         $validated = $request->validate([
             'name'    => 'required|string|max:100',
             'email'   => 'required|email|max:100',

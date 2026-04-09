@@ -8,6 +8,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config = { theme: { extend: { colors: { primary: { 600:'#1a56db', 700:'#1e429f' } } } } }</script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    @if(config('services.recaptcha.site_key'))
+    <script src="https://www.google.com/recaptcha/api.js?render={{ config('services.recaptcha.site_key') }}"></script>
+    @endif
     <style>
         html { scroll-behavior: smooth; }
         .card-hover { transition: transform .2s, box-shadow .2s; }
@@ -104,8 +107,15 @@
                             </div>
                         @endif
 
-                        <form action="{{ route('contact.submit') }}" method="POST" class="space-y-6">
+                        @if($errors->has('recaptcha'))
+                            <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700">
+                                <i class="bi bi-exclamation-triangle-fill mr-2"></i>{{ $errors->first('recaptcha') }}
+                            </div>
+                        @endif
+
+                        <form action="{{ route('contact.submit') }}" method="POST" class="space-y-6" id="contactForm">
                             @csrf
+                            <input type="hidden" name="recaptcha_token" id="recaptchaToken">
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {{-- Name --}}
@@ -186,14 +196,33 @@
                             <div class="flex items-center justify-between pt-4">
                                 <p class="text-sm text-gray-500">
                                     <i class="bi bi-shield-check mr-1"></i>
-                                    Seus dados estão protegidos
+                                    Protegido por reCAPTCHA
                                 </p>
-                                <button type="submit"
-                                    class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-xl transition transform hover:scale-105">
+                                <button type="submit" id="submitBtn"
+                                    class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-xl transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <i class="bi bi-send mr-2"></i>Enviar
                                 </button>
                             </div>
                         </form>
+
+                        @if(config('services.recaptcha.site_key'))
+                        <script>
+                            document.getElementById('contactForm').addEventListener('submit', function(e) {
+                                e.preventDefault();
+                                const btn = document.getElementById('submitBtn');
+                                btn.disabled = true;
+                                btn.innerHTML = '<i class="bi bi-hourglass-split mr-2"></i>Verificando...';
+
+                                grecaptcha.ready(function() {
+                                    grecaptcha.execute('{{ config('services.recaptcha.site_key') }}', {action: 'contact_submit'})
+                                        .then(function(token) {
+                                            document.getElementById('recaptchaToken').value = token;
+                                            document.getElementById('contactForm').submit();
+                                        });
+                                });
+                            });
+                        </script>
+                        @endif
                     </div>
                 </div>
             </div>

@@ -241,7 +241,7 @@ $isLoggedIn = auth('client')->check();
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 @forelse($gateways as $gateway)
                                 <label class="relative cursor-pointer">
-                                    <input type="radio" name="payment_method" value="{{ $gateway->code }}" required
+                                    <input type="radio" name="payment_method" value="{{ $gateway->slug }}" required
                                            class="sr-only peer"
                                            @if($loop->first) checked @endif>
                                     <div class="border-2 rounded-lg p-4 peer-checked:border-blue-600 peer-checked:bg-blue-50 hover:border-blue-300 transition">
@@ -251,7 +251,9 @@ $isLoggedIn = auth('client')->check();
                                             </div>
                                             <div>
                                                 <div class="font-semibold text-gray-900">{{ $gateway->name }}</div>
-                                                <div class="text-xs text-gray-500">{{ $gateway->description ?? '' }}</div>
+                                                @if($gateway->test_mode)
+                                                <div class="text-xs text-amber-600 font-medium">Modo Teste</div>
+                                                @endif
                                             </div>
                                         </div>
                                     </div>
@@ -319,11 +321,13 @@ $isLoggedIn = auth('client')->check();
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
                             @forelse($gateways as $gateway)
                             <label class="relative cursor-pointer">
-                                <input type="radio" name="payment_method" value="{{ $gateway->code }}" required
+                                <input type="radio" name="payment_method" value="{{ $gateway->slug }}" required
                                        class="sr-only peer" @if($loop->first) checked @endif>
                                 <div class="border-2 rounded-lg p-4 peer-checked:border-blue-600 peer-checked:bg-blue-50 hover:border-blue-300 transition">
                                     <div class="font-semibold text-gray-900">{{ $gateway->name }}</div>
-                                    <div class="text-xs text-gray-500">{{ $gateway->description ?? '' }}</div>
+                                    @if($gateway->test_mode)
+                                    <div class="text-xs text-amber-600 font-medium">Modo Teste</div>
+                                    @endif
                                 </div>
                             </label>
                             @empty

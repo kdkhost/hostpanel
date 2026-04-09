@@ -246,7 +246,7 @@ class HomeController extends Controller
         }
 
         // Gateways de pagamento ativos
-        $gateways = \App\Models\PaymentGateway::where('active', true)->get();
+        $gateways = \App\Models\Gateway::where('active', true)->get();
 
         // Se cliente logado, pega dados
         $client = auth('client')->user();

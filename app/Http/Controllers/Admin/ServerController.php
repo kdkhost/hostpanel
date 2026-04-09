@@ -259,6 +259,39 @@ class ServerController extends Controller
         ]);
     }
 
+    public function debugHealth(Server $server): JsonResponse
+    {
+        $whm = new \App\Services\WhmService($server);
+        $results = [];
+
+        foreach (['loadavg', 'getdiskusage', 'listaccts', 'version'] as $fn) {
+            try {
+                $results[$fn] = $whm->call($fn, $fn === 'listaccts' ? [] : []);
+            } catch (\Throwable $e) {
+                $results[$fn] = ['error' => $e->getMessage()];
+            }
+        }
+
+        // Tentar systemloadavg API v0
+        try {
+            $results['systemloadavg_v0'] = $whm->call('systemloadavg', ['api.version' => 0]);
+        } catch (\Throwable $e) {
+            $results['systemloadavg_v0'] = ['error' => $e->getMessage()];
+        }
+
+        // Tentar resourceusage
+        try {
+            $results['resourceusage'] = $whm->call('resourceusage', []);
+        } catch (\Throwable $e) {
+            $results['resourceusage'] = ['error' => $e->getMessage()];
+        }
+
+        // Health final processado
+        $results['_processed'] = $whm->getServerHealth();
+
+        return response()->json($results);
+    }
+
     public function testConnectivity(Server $server): JsonResponse
     {
         try {

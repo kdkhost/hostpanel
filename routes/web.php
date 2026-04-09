@@ -276,6 +276,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/{server}/health-history', [Admin\ServerController::class, 'healthHistory'])->name('health.history');
             Route::post('/{server}/status',        [Admin\ServerController::class, 'toggleStatus'])->name('status');
             Route::post('/{server}/testar',        [Admin\ServerController::class, 'testConnectivity'])->name('test');
+            Route::get('/{server}/debug-health',   [Admin\ServerController::class, 'debugHealth'])->name('debug.health');
         });
 
         // Produtos

@@ -111,7 +111,9 @@ class WhmService
             'raw_data'        => [],
         ];
 
-        // 1. Load averages (WHM API v1: data.one, data.five, data.fifteen)
+        // ──────────────────────────────────────────────
+        // 1. Load averages  (WHM API v1 — sempre funciona)
+        // ──────────────────────────────────────────────
         try {
             $raw = $this->call('loadavg');
             $d = $raw['data'] ?? $raw;
@@ -120,115 +122,243 @@ class WhmService
             $stats['load_avg_15'] = (float) ($d['fifteen'] ?? 0);
             $stats['raw_data']['loadavg'] = $d;
         } catch (\Throwable $e) {
-            Log::warning("WHM loadavg failed [{$this->server->hostname}]: " . $e->getMessage());
+            Log::warning("WHM loadavg failed [{$this->server->hostname}]: {$e->getMessage()}");
         }
 
-        // 2. CPU from load average (systemloadavg API v0 has cpu_count)
-        try {
-            $raw = $this->call('systemloadavg', ['api.version' => 0]);
-            $cpuCount = (int) ($raw['cpucount'] ?? $raw['cpu_count'] ?? 1);
-            $cpuCount = max($cpuCount, 1);
-            if ($stats['load_avg_1'] !== null) {
-                $stats['cpu_usage'] = round(min(($stats['load_avg_1'] / $cpuCount) * 100, 100), 2);
-            }
-            if (isset($raw['uptime'])) {
-                $stats['uptime_seconds'] = $this->parseUptimeToSeconds($raw['uptime']);
-            }
-            $stats['raw_data']['systemloadavg'] = $raw;
-        } catch (\Throwable) {
-            // Fallback: estimate CPU from load_avg_1 assuming 1 CPU
-            if ($stats['load_avg_1'] !== null) {
-                $stats['cpu_usage'] = round(min($stats['load_avg_1'] * 100, 100), 2);
-            }
+        // CPU: estimar a partir do load avg (normalizado por nº de CPUs se disponível)
+        $cpuCount = 1;
+        if ($stats['load_avg_1'] !== null) {
+            $stats['cpu_usage'] = round(min($stats['load_avg_1'] * 100, 100), 2);
         }
 
-        // 3. Memory usage via API v0 (retorna memory_used, memory_total etc.)
-        try {
-            $raw = $this->call('systemloadavg', ['api.version' => 0]);
-            $memUsed = (float) ($raw['memory_used'] ?? 0);
-            $memTotal = (float) ($raw['memory_total'] ?? 0);
-            if ($memTotal > 0) {
-                $stats['ram_usage'] = round(($memUsed / $memTotal) * 100, 2);
-            } elseif (isset($raw['memorypercent'])) {
-                $stats['ram_usage'] = (float) $raw['memorypercent'];
-            }
-        } catch (\Throwable) {
-            // Tentativa alternativa: getmemoryusage (cPanel >= 110)
+        // ──────────────────────────────────────────────
+        // 2. Dados do servidor (RAM, Disco, Uptime, CPU count)
+        //    Tenta várias fontes em ordem de prioridade
+        // ──────────────────────────────────────────────
+        $this->tryFetchServerStats($stats, $cpuCount);
+
+        // Recalcular CPU com cpuCount real (se obtido)
+        if ($stats['load_avg_1'] !== null && $cpuCount > 1) {
+            $stats['cpu_usage'] = round(min(($stats['load_avg_1'] / $cpuCount) * 100, 100), 2);
+        }
+
+        // ──────────────────────────────────────────────
+        // 3. Disco via getdiskusage (fallback se ainda null)
+        // ──────────────────────────────────────────────
+        if ($stats['disk_usage'] === null) {
             try {
-                $raw = $this->call('getmemoryusage');
-                $d = $raw['data'] ?? $raw;
-                $stats['ram_usage'] = (float) ($d['percent'] ?? $d['percentage'] ?? 0);
-            } catch (\Throwable) {}
-        }
-
-        // 4. Disk usage
-        try {
-            $raw = $this->call('getdiskusage');
-            $d = $raw['data'] ?? $raw;
-            $partitions = $d['partition'] ?? $d['partitions'] ?? $d;
-            if (is_array($partitions)) {
-                // Procura partição root "/" ou usa a primeira
-                $root = null;
-                foreach ($partitions as $p) {
-                    if (!is_array($p)) continue;
-                    $mount = $p['mount'] ?? $p['filesystem'] ?? $p['mounted'] ?? '';
-                    if ($mount === '/' || $mount === '/home') {
-                        $root = $p;
-                        if ($mount === '/') break;
-                    }
-                }
-                $root = $root ?? (is_array(reset($partitions)) ? reset($partitions) : null);
-                if ($root) {
-                    $pct = $root['percentage'] ?? $root['percent'] ?? $root['percentage_used'] ?? null;
-                    if ($pct !== null) {
-                        $stats['disk_usage'] = (float) str_replace('%', '', (string) $pct);
-                    } elseif (isset($root['used'], $root['total'])) {
-                        $total = (float) str_replace(['M', 'G', 'T', '%'], '', (string) $root['total']);
-                        $used = (float) str_replace(['M', 'G', 'T', '%'], '', (string) $root['used']);
-                        if ($total > 0) {
-                            $stats['disk_usage'] = round(($used / $total) * 100, 2);
-                        }
-                    }
-                }
+                $raw = $this->call('getdiskusage');
+                $stats['disk_usage'] = $this->parseDiskUsage($raw);
+                $stats['raw_data']['diskusage'] = $raw['data'] ?? $raw;
+            } catch (\Throwable $e) {
+                Log::warning("WHM getdiskusage failed [{$this->server->hostname}]: {$e->getMessage()}");
             }
-            $stats['raw_data']['diskusage'] = $d;
-        } catch (\Throwable $e) {
-            Log::warning("WHM getdiskusage failed [{$this->server->hostname}]: " . $e->getMessage());
         }
 
-        // 5. cPanel version
+        // ──────────────────────────────────────────────
+        // 4. Contagem de contas
+        // ──────────────────────────────────────────────
+        try {
+            $raw = $this->call('listaccts');
+            $acctList = $raw['data']['acct'] ?? $raw['acct'] ?? [];
+            $stats['account_count'] = is_array($acctList) ? count($acctList) : 0;
+            $stats['raw_data']['listaccts_count'] = $stats['account_count'];
+        } catch (\Throwable $e) {
+            Log::info("WHM listaccts failed [{$this->server->hostname}]: {$e->getMessage()}");
+        }
+
+        // ──────────────────────────────────────────────
+        // 5. Versão do cPanel
+        // ──────────────────────────────────────────────
         try {
             $raw = $this->call('version');
             $d = $raw['data'] ?? $raw;
             $stats['cpanel_version'] = $d['version'] ?? null;
         } catch (\Throwable) {}
 
-        // 6. Account count
+        return $stats;
+    }
+
+    /**
+     * Tenta múltiplas fontes WHM para obter RAM, Disco, Uptime e CPU count.
+     */
+    protected function tryFetchServerStats(array &$stats, int &$cpuCount): void
+    {
+        // Fonte A: resourceusage (cPanel >= 86, retorna tudo)
         try {
-            $raw = $this->call('listaccts', ['want' => 'user']);
-            $acctList = $raw['data']['acct'] ?? $raw['acct'] ?? [];
-            $stats['account_count'] = is_array($acctList) ? count($acctList) : 0;
+            $raw = $this->call('resourceusage');
+            $d = $raw['data'] ?? $raw;
+            $stats['raw_data']['resourceusage'] = $d;
+
+            if (isset($d['memory']['percent'])) {
+                $stats['ram_usage'] = (float) $d['memory']['percent'];
+            } elseif (isset($d['memory']['used'], $d['memory']['total'])) {
+                $total = (float) $d['memory']['total'];
+                if ($total > 0) {
+                    $stats['ram_usage'] = round(((float) $d['memory']['used'] / $total) * 100, 2);
+                }
+            }
+
+            if (isset($d['disk'])) {
+                $stats['disk_usage'] = $this->parseDiskUsage(['data' => $d['disk']]);
+            }
+
+            if (isset($d['cpucount'])) {
+                $cpuCount = max((int) $d['cpucount'], 1);
+            }
+
+            if (isset($d['uptime'])) {
+                $stats['uptime_seconds'] = $this->parseUptimeToSeconds((string) $d['uptime']);
+            }
+
+            // Se temos RAM, podemos parar de tentar
+            if ($stats['ram_usage'] !== null) return;
         } catch (\Throwable) {}
 
-        return $stats;
+        // Fonte B: systemloadavg API v0 (pode retornar cpucount e uptime)
+        try {
+            $raw = $this->call('systemloadavg', ['api.version' => 0]);
+            $stats['raw_data']['systemloadavg'] = $raw;
+
+            if (isset($raw['cpucount'])) {
+                $cpuCount = max((int) $raw['cpucount'], 1);
+            }
+            if (isset($raw['uptime'])) {
+                $stats['uptime_seconds'] = $this->parseUptimeToSeconds((string) $raw['uptime']);
+            }
+        } catch (\Throwable) {}
+
+        // Fonte C: Leitura direta do /proc/meminfo via read_cpanel_file (cPanel >= 94)
+        if ($stats['ram_usage'] === null) {
+            try {
+                $memRaw = $this->http->get('json-api/get_vps_detail_info', [
+                    'query' => ['api.version' => 1],
+                ])->getBody()->getContents();
+                $mem = json_decode($memRaw, true);
+                $d = $mem['data'] ?? $mem;
+                if (isset($d['memory_total'], $d['memory_used'])) {
+                    $total = (float) $d['memory_total'];
+                    if ($total > 0) {
+                        $stats['ram_usage'] = round(((float) $d['memory_used'] / $total) * 100, 2);
+                    }
+                }
+            } catch (\Throwable) {}
+        }
+
+        // Fonte D: Parsear /proc/meminfo e /proc/uptime via endpoint genérico
+        if ($stats['ram_usage'] === null || $stats['uptime_seconds'] === null) {
+            $this->tryReadProcStats($stats);
+        }
+    }
+
+    /**
+     * Tenta ler /proc/meminfo e /proc/uptime via WHM exec ou endpoint de status.
+     */
+    protected function tryReadProcStats(array &$stats): void
+    {
+        // Tentar via getserverstatus (retorna info do /proc)
+        try {
+            $raw = $this->call('getserverstatus');
+            $d = $raw['data'] ?? $raw;
+            $stats['raw_data']['serverstatus'] = $d;
+
+            // Parsear memória se disponível
+            if ($stats['ram_usage'] === null) {
+                $memTotal = (float) ($d['memtotal'] ?? $d['memory_total'] ?? 0);
+                $memFree = (float) ($d['memfree'] ?? $d['memory_free'] ?? 0);
+                $memAvailable = (float) ($d['memavailable'] ?? $d['memory_available'] ?? $memFree);
+                $cached = (float) ($d['cached'] ?? 0);
+                $buffers = (float) ($d['buffers'] ?? 0);
+
+                if ($memTotal > 0) {
+                    // Usar MemAvailable se existir, senão Free + Buffers + Cached
+                    $used = $memTotal - ($memAvailable > 0 ? $memAvailable : ($memFree + $cached + $buffers));
+                    $stats['ram_usage'] = round(max(0, ($used / $memTotal) * 100), 2);
+                }
+            }
+
+            // Parsear uptime se disponível
+            if ($stats['uptime_seconds'] === null && isset($d['uptime'])) {
+                $stats['uptime_seconds'] = $this->parseUptimeToSeconds((string) $d['uptime']);
+            }
+        } catch (\Throwable) {}
+
+        // Último recurso para RAM: tentar endpoint de stat do backend cPanel
+        if ($stats['ram_usage'] === null) {
+            try {
+                $raw = $this->http->get('json-api/stathp', ['query' => ['api.version' => 1]])->getBody()->getContents();
+                $d = json_decode($raw, true) ?? [];
+                $data = $d['data'] ?? $d;
+                foreach (['memoryusage', 'memory_usage', 'physicalmem'] as $key) {
+                    if (isset($data[$key]) && is_numeric($data[$key])) {
+                        $stats['ram_usage'] = round((float) $data[$key], 2);
+                        break;
+                    }
+                }
+            } catch (\Throwable) {}
+        }
+    }
+
+    /**
+     * Parseia a resposta de getdiskusage para extrair a % de uso.
+     */
+    protected function parseDiskUsage(array $raw): ?float
+    {
+        $d = $raw['data'] ?? $raw;
+        // A resposta pode ser: array de partições direto, ou { partition: [...] }
+        $partitions = $d['partition'] ?? $d['partitions'] ?? $d;
+
+        if (!is_array($partitions)) return null;
+
+        $root = null;
+        foreach ($partitions as $key => $p) {
+            if (!is_array($p)) continue;
+            // WHM usa 'item' e 'mount' para o ponto de montagem
+            $mount = $p['item'] ?? $p['mount'] ?? $p['filesystem'] ?? $p['mounted'] ?? '';
+            if ($mount === '/' || $mount === '/home') {
+                $root = $p;
+                if ($mount === '/') break;
+            }
+        }
+
+        // Se não achou "/" nem "/home", usa a primeira partição válida
+        if (!$root) {
+            foreach ($partitions as $p) {
+                if (is_array($p) && (isset($p['percentage']) || isset($p['used_bytes']))) {
+                    $root = $p;
+                    break;
+                }
+            }
+        }
+
+        if (!$root) return null;
+
+        // Tentar campo de porcentagem direto
+        $pct = $root['percentage'] ?? $root['percent'] ?? $root['percentage_used'] ?? null;
+        if ($pct !== null) {
+            return (float) str_replace('%', '', (string) $pct);
+        }
+
+        // Calcular a partir de bytes
+        $usedBytes = (float) ($root['used_bytes'] ?? $root['blocks_used'] ?? 0);
+        $totalBytes = (float) ($root['total_bytes'] ?? $root['blocks'] ?? 0);
+        if ($totalBytes > 0) {
+            return round(($usedBytes / $totalBytes) * 100, 2);
+        }
+
+        return null;
     }
 
     protected function parseUptimeToSeconds(string $uptime): ?int
     {
-        // Formatos comuns: "up 10 days, 5:30" ou "10 days 5 hours 30 min" ou "5:30"
         $seconds = 0;
-        if (preg_match('/(\d+)\s*day/', $uptime, $m)) {
-            $seconds += (int) $m[1] * 86400;
-        }
-        if (preg_match('/(\d+)\s*hour/', $uptime, $m)) {
-            $seconds += (int) $m[1] * 3600;
-        }
-        if (preg_match('/(\d+):(\d+)/', $uptime, $m)) {
-            $seconds += (int) $m[1] * 3600 + (int) $m[2] * 60;
-        }
-        if (preg_match('/(\d+)\s*min/', $uptime, $m)) {
-            $seconds += (int) $m[1] * 60;
-        }
+        // "up 10 days, 5:30" ou "10 days 5 hours 30 min" ou "5:30"
+        if (preg_match('/(\d+)\s*day/', $uptime, $m)) $seconds += (int) $m[1] * 86400;
+        if (preg_match('/(\d+)\s*hour/', $uptime, $m)) $seconds += (int) $m[1] * 3600;
+        if (preg_match('/(\d+):(\d+)/', $uptime, $m)) $seconds += (int) $m[1] * 3600 + (int) $m[2] * 60;
+        if (preg_match('/(\d+)\s*min/', $uptime, $m)) $seconds += (int) $m[1] * 60;
+        // Formato numérico direto (segundos)
+        if ($seconds === 0 && is_numeric(trim($uptime))) $seconds = (int) $uptime;
         return $seconds > 0 ? $seconds : null;
     }
 

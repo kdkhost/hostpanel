@@ -728,12 +728,19 @@ function serverShow() {
             return 'Ruim';
         },
 
+        _refreshCycles: 0,
+
         startAutoRefresh() {
             this._countdownTimer = setInterval(() => {
                 this.countdown--;
                 if (this.countdown <= 0) {
                     this.countdown = 30;
+                    this._refreshCycles++;
                     this.loadHealth();
+                    // Atualiza gráficos a cada 5 ciclos (2.5 min)
+                    if (this._refreshCycles % 5 === 0) {
+                        this.renderCharts();
+                    }
                 }
             }, 1000);
         },

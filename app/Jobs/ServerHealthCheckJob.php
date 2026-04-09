@@ -35,59 +35,56 @@ class ServerHealthCheckJob implements ShouldQueue
     {
         $network = $this->measureNetwork($server);
 
+        $stats = [];
         try {
             $module = ServerModuleManager::make($server);
             $stats  = $module->getServerStats();
-
-            $cpuUsage  = $stats['cpu_usage'] ?? null;
-            $ramUsage  = $stats['ram_usage'] ?? null;
-            $diskUsage = $stats['disk_usage'] ?? null;
-            $load1     = $stats['load_avg_1'] ?? null;
-            $load5     = $stats['load_avg_5'] ?? null;
-            $load15    = $stats['load_avg_15'] ?? null;
-
-            // Normalizar para porcentagem (0-100)
-            if ($cpuUsage !== null && $cpuUsage > 100) {
-                $cpuUsage = min(round($cpuUsage * 10, 2), 100);
-            }
-
-            $log = ServerHealthLog::create([
-                'server_id'       => $server->id,
-                'cpu_usage'       => $cpuUsage,
-                'ram_usage'       => $ramUsage,
-                'disk_usage'      => $diskUsage,
-                'load_avg_1'      => $load1,
-                'load_avg_5'      => $load5,
-                'load_avg_15'     => $load15,
-                'account_count'   => $stats['account_count'] ?? $server->current_accounts,
-                'status'          => $network['online'] ? 'online' : 'offline',
-                'latency_ms'      => $network['latency_ms'],
-                'packet_loss_pct' => $network['packet_loss_pct'],
-                'network_status'  => $this->deriveNetworkStatus($network),
-                'checked_at'      => now(),
-                'raw_data'        => $stats,
-            ]);
-
-            $server->update([
-                'status'         => $network['online'] ? 'online' : 'offline',
-                'last_check_at'  => now(),
-                'cpanel_version' => $stats['cpanel_version'] ?? $server->cpanel_version,
-                'current_accounts' => $stats['account_count'] ?? $server->current_accounts,
-            ]);
-
         } catch (\Exception $e) {
-            // Módulo falhou, mas podemos ainda registrar o status de rede
-            ServerHealthLog::create([
-                'server_id'      => $server->id,
-                'status'         => $network['online'] ? 'warning' : 'offline',
-                'latency_ms'     => $network['latency_ms'],
-                'network_status' => $this->deriveNetworkStatus($network),
-                'checked_at'     => now(),
-            ]);
-
-            $server->update(['status' => $network['online'] ? 'online' : 'offline', 'last_check_at' => now()]);
-            Log::warning("Health check partial for server #{$server->id}: " . $e->getMessage());
+            Log::warning("Health check module failed for server #{$server->id}: " . $e->getMessage());
         }
+
+        $cpuUsage  = $stats['cpu_usage'] ?? null;
+        $ramUsage  = $stats['ram_usage'] ?? null;
+        $diskUsage = $stats['disk_usage'] ?? null;
+        $load1     = $stats['load_avg_1'] ?? null;
+        $load5     = $stats['load_avg_5'] ?? null;
+        $load15    = $stats['load_avg_15'] ?? null;
+
+        // Normalizar para porcentagem (0-100)
+        if ($cpuUsage !== null && $cpuUsage > 100) {
+            $cpuUsage = min(round($cpuUsage, 2), 100);
+        }
+
+        $networkStatus = $this->deriveNetworkStatus($network);
+        // Se módulo retornou dados, considerar online mesmo que rede tenha degradação
+        if (!empty($stats) && ($cpuUsage !== null || $ramUsage !== null)) {
+            $networkStatus = $networkStatus === 'offline' ? 'degraded' : $networkStatus;
+        }
+
+        ServerHealthLog::create([
+            'server_id'       => $server->id,
+            'cpu_usage'       => $cpuUsage,
+            'ram_usage'       => $ramUsage,
+            'disk_usage'      => $diskUsage,
+            'load_avg_1'      => $load1,
+            'load_avg_5'      => $load5,
+            'load_avg_15'     => $load15,
+            'uptime_seconds'  => $stats['uptime_seconds'] ?? null,
+            'account_count'   => $stats['account_count'] ?? $server->current_accounts,
+            'status'          => $network['online'] ? 'online' : 'offline',
+            'latency_ms'      => $network['latency_ms'],
+            'packet_loss_pct' => $network['packet_loss_pct'],
+            'network_status'  => $networkStatus,
+            'checked_at'      => now(),
+            'raw_data'        => $stats,
+        ]);
+
+        $server->update([
+            'status'           => $network['online'] ? 'online' : 'offline',
+            'last_check_at'    => now(),
+            'cpanel_version'   => $stats['cpanel_version'] ?? $server->cpanel_version,
+            'current_accounts' => $stats['account_count'] ?? $server->current_accounts,
+        ]);
     }
 
     protected function measureNetwork(Server $server): array

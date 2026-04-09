@@ -97,36 +97,139 @@ class WhmService
 
     public function getServerHealth(): array
     {
+        $stats = [
+            'cpu_usage'       => null,
+            'ram_usage'       => null,
+            'disk_usage'      => null,
+            'load_avg_1'      => null,
+            'load_avg_5'      => null,
+            'load_avg_15'     => null,
+            'uptime_seconds'  => null,
+            'account_count'   => null,
+            'cpanel_version'  => null,
+            'status'          => 'online',
+            'raw_data'        => [],
+        ];
+
+        // 1. Load averages (WHM API v1: data.one, data.five, data.fifteen)
         try {
-            $info       = $this->call('loadavg');
-            $diskInfo   = $this->call('getdiskusage');
-            $cpuInfo    = $this->call('systemloadavg');
-            $memInfo    = $this->call('getmemorypercent');
-            $serverInfo = $this->call('version');
-            $acctCount  = $this->call('listaccts', ['want' => 'user']);
-
-            $load = [
-                $info['one'] ?? $info['loadavg'][0] ?? 0,
-                $info['five'] ?? $info['loadavg'][1] ?? 0,
-                $info['fifteen'] ?? $info['loadavg'][2] ?? 0
-            ];
-
-            return [
-                'cpu_usage'       => round(min(($load[0] ?? 0) * 10, 100), 2),
-                'ram_usage'       => $memInfo['percent'] ?? null,
-                'load_avg_1'      => $load[0] ?? null,
-                'load_avg_5'      => $load[1] ?? null,
-                'load_avg_15'     => $load[2] ?? null,
-                'disk_usage'      => $diskInfo['percent'] ?? null,
-                'account_count'   => count($acctCount['acct'] ?? $acctCount['data']['acct'] ?? []),
-                'cpanel_version'  => $serverInfo['version'] ?? null,
-                'status'          => 'online',
-                'raw_data'        => compact('info', 'diskInfo', 'memInfo', 'serverInfo'),
-            ];
-        } catch (\Exception $e) {
-            Log::error('WHM health check failed: ' . $e->getMessage());
-            return ['status' => 'offline', 'error' => $e->getMessage()];
+            $raw = $this->call('loadavg');
+            $d = $raw['data'] ?? $raw;
+            $stats['load_avg_1']  = (float) ($d['one'] ?? 0);
+            $stats['load_avg_5']  = (float) ($d['five'] ?? 0);
+            $stats['load_avg_15'] = (float) ($d['fifteen'] ?? 0);
+            $stats['raw_data']['loadavg'] = $d;
+        } catch (\Throwable $e) {
+            Log::warning("WHM loadavg failed [{$this->server->hostname}]: " . $e->getMessage());
         }
+
+        // 2. CPU from load average (systemloadavg API v0 has cpu_count)
+        try {
+            $raw = $this->call('systemloadavg', ['api.version' => 0]);
+            $cpuCount = (int) ($raw['cpucount'] ?? $raw['cpu_count'] ?? 1);
+            $cpuCount = max($cpuCount, 1);
+            if ($stats['load_avg_1'] !== null) {
+                $stats['cpu_usage'] = round(min(($stats['load_avg_1'] / $cpuCount) * 100, 100), 2);
+            }
+            if (isset($raw['uptime'])) {
+                $stats['uptime_seconds'] = $this->parseUptimeToSeconds($raw['uptime']);
+            }
+            $stats['raw_data']['systemloadavg'] = $raw;
+        } catch (\Throwable) {
+            // Fallback: estimate CPU from load_avg_1 assuming 1 CPU
+            if ($stats['load_avg_1'] !== null) {
+                $stats['cpu_usage'] = round(min($stats['load_avg_1'] * 100, 100), 2);
+            }
+        }
+
+        // 3. Memory usage via API v0 (retorna memory_used, memory_total etc.)
+        try {
+            $raw = $this->call('systemloadavg', ['api.version' => 0]);
+            $memUsed = (float) ($raw['memory_used'] ?? 0);
+            $memTotal = (float) ($raw['memory_total'] ?? 0);
+            if ($memTotal > 0) {
+                $stats['ram_usage'] = round(($memUsed / $memTotal) * 100, 2);
+            } elseif (isset($raw['memorypercent'])) {
+                $stats['ram_usage'] = (float) $raw['memorypercent'];
+            }
+        } catch (\Throwable) {
+            // Tentativa alternativa: getmemoryusage (cPanel >= 110)
+            try {
+                $raw = $this->call('getmemoryusage');
+                $d = $raw['data'] ?? $raw;
+                $stats['ram_usage'] = (float) ($d['percent'] ?? $d['percentage'] ?? 0);
+            } catch (\Throwable) {}
+        }
+
+        // 4. Disk usage
+        try {
+            $raw = $this->call('getdiskusage');
+            $d = $raw['data'] ?? $raw;
+            $partitions = $d['partition'] ?? $d['partitions'] ?? $d;
+            if (is_array($partitions)) {
+                // Procura partição root "/" ou usa a primeira
+                $root = null;
+                foreach ($partitions as $p) {
+                    if (!is_array($p)) continue;
+                    $mount = $p['mount'] ?? $p['filesystem'] ?? $p['mounted'] ?? '';
+                    if ($mount === '/' || $mount === '/home') {
+                        $root = $p;
+                        if ($mount === '/') break;
+                    }
+                }
+                $root = $root ?? (is_array(reset($partitions)) ? reset($partitions) : null);
+                if ($root) {
+                    $pct = $root['percentage'] ?? $root['percent'] ?? $root['percentage_used'] ?? null;
+                    if ($pct !== null) {
+                        $stats['disk_usage'] = (float) str_replace('%', '', (string) $pct);
+                    } elseif (isset($root['used'], $root['total'])) {
+                        $total = (float) str_replace(['M', 'G', 'T', '%'], '', (string) $root['total']);
+                        $used = (float) str_replace(['M', 'G', 'T', '%'], '', (string) $root['used']);
+                        if ($total > 0) {
+                            $stats['disk_usage'] = round(($used / $total) * 100, 2);
+                        }
+                    }
+                }
+            }
+            $stats['raw_data']['diskusage'] = $d;
+        } catch (\Throwable $e) {
+            Log::warning("WHM getdiskusage failed [{$this->server->hostname}]: " . $e->getMessage());
+        }
+
+        // 5. cPanel version
+        try {
+            $raw = $this->call('version');
+            $d = $raw['data'] ?? $raw;
+            $stats['cpanel_version'] = $d['version'] ?? null;
+        } catch (\Throwable) {}
+
+        // 6. Account count
+        try {
+            $raw = $this->call('listaccts', ['want' => 'user']);
+            $acctList = $raw['data']['acct'] ?? $raw['acct'] ?? [];
+            $stats['account_count'] = is_array($acctList) ? count($acctList) : 0;
+        } catch (\Throwable) {}
+
+        return $stats;
+    }
+
+    protected function parseUptimeToSeconds(string $uptime): ?int
+    {
+        // Formatos comuns: "up 10 days, 5:30" ou "10 days 5 hours 30 min" ou "5:30"
+        $seconds = 0;
+        if (preg_match('/(\d+)\s*day/', $uptime, $m)) {
+            $seconds += (int) $m[1] * 86400;
+        }
+        if (preg_match('/(\d+)\s*hour/', $uptime, $m)) {
+            $seconds += (int) $m[1] * 3600;
+        }
+        if (preg_match('/(\d+):(\d+)/', $uptime, $m)) {
+            $seconds += (int) $m[1] * 3600 + (int) $m[2] * 60;
+        }
+        if (preg_match('/(\d+)\s*min/', $uptime, $m)) {
+            $seconds += (int) $m[1] * 60;
+        }
+        return $seconds > 0 ? $seconds : null;
     }
 
     public function updateServerHealth(): ServerHealthLog

@@ -127,6 +127,22 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        'whm' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/whm.log'),
+            'level' => 'debug',
+            'days' => 7,
+            'replace_placeholders' => true,
+        ],
+
+        'aapanel' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/aapanel.log'),
+            'level' => 'debug',
+            'days' => 7,
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

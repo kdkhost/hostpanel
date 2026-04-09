@@ -28,7 +28,6 @@ class WhmService
     {
         return [
             'Authorization' => 'whm ' . $this->server->username . ':' . $this->server->api_key,
-            'Content-Type'  => 'application/json',
             'Accept'        => 'application/json',
         ];
     }

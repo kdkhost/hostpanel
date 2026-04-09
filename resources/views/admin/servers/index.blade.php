@@ -130,123 +130,131 @@
                     <button class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <form @submit.prevent="saveServer">
-                    <div class="modal-body row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Nome *</label>
-                            <input type="text" class="form-control" x-model="serverForm.name" required>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Hostname *</label>
-                            <input type="text" class="form-control" x-model="serverForm.hostname" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">IP *</label>
-                            <input type="text" class="form-control" x-model="serverForm.ip_address" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">IP secundario</label>
-                            <input type="text" class="form-control" x-model="serverForm.ip_address_secondary">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Porta</label>
-                            <input type="number" class="form-control" x-model="serverForm.port" min="1" max="65535">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Tipo</label>
-                            <select class="form-select" x-model="serverForm.type">
-                                <option value="shared">Shared</option>
-                                <option value="reseller">Reseller</option>
-                                <option value="vps">VPS</option>
-                                <option value="dedicated">Dedicated</option>
-                                <option value="other">Outro</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Modulo</label>
-                            <select class="form-select" x-model="serverForm.module" @change="applyModuleDefaults()">
-                                <option value="whm">WHM/cPanel</option>
-                                <option value="whmsonic">WHMSonic</option>
-                                <option value="cpanel">cPanel</option>
-                                <option value="aapanel">AAPanel</option>
-                                <option value="btpanel">BT Panel</option>
-                                <option value="plesk">Plesk</option>
-                                <option value="directadmin">DirectAdmin</option>
-                                <option value="ispconfig">ISPConfig</option>
-                                <option value="blesta">Blesta</option>
-                                <option value="cyberpanel">CyberPanel</option>
-                                <option value="webuzo">Webuzo</option>
-                                <option value="hestia">HestiaCP</option>
-                                <option value="virtualmin">Virtualmin</option>
-                                <option value="none">Nenhum</option>
-                            </select>
-                        </div>
-
-                        <div class="col-12" x-show="moduleHelpText()">
-                            <div class="alert alert-info py-2 small mb-0">
-                                <span x-text="moduleHelpText()"></span>
+                    <div class="modal-body">
+                        <!-- Seção 1: Identificação e Rede -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12"><h6 class="fw-bold border-bottom pb-2 text-primary text-uppercase small ls-1"><i class="bi bi-info-circle me-1"></i> Identificação e Rede</h6></div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" x-model="serverForm.name" required placeholder="Ex: Servidor de Hospedagem #1">
+                                <div class="text-muted" style="font-size: .7rem">Apelido interno para sua organização.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Hostname <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" x-model="serverForm.hostname" required placeholder="Ex: whm1.seusite.com.br">
+                                <div class="text-muted" style="font-size: .7rem">URL do servidor sem http ou porta.</div>
+                            </div>
+                            <div class="col-md-6 col-lg-4">
+                                <label class="form-label fw-semibold">IP Principal <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" x-model="serverForm.ip_address" required placeholder="0.0.0.0">
+                            </div>
+                            <div class="col-md-6 col-lg-4">
+                                <label class="form-label fw-semibold">IP Secundário</label>
+                                <input type="text" class="form-control" x-model="serverForm.ip_address_secondary" placeholder="Opcional">
+                            </div>
+                            <div class="col-md-6 col-lg-4">
+                                <label class="form-label fw-semibold">Porta API</label>
+                                <input type="number" class="form-control" x-model="serverForm.port" min="1" max="65535" placeholder="Padrão WHM: 2087">
                             </div>
                         </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label">Usuario <span x-show="requiresUsername()">*</span></label>
-                            <input type="text" class="form-control" x-model="serverForm.username" :required="requiresUsername()">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">API Key <span x-show="requiresApiKey()">*</span></label>
-                            <input type="password" class="form-control" x-model="serverForm.api_key" 
-                                   :placeholder="editingId ? '******** (Salvo - deixe em branco para manter)' : 'Chave API'">
-                        </div>
-                        <div class="col-md-6" x-show="requiresPassword()">
-                            <label class="form-label">Senha <span x-show="requiresPassword()">*</span></label>
-                            <input type="password" class="form-control" x-model="serverForm.password"
-                                   :placeholder="editingId ? '******** (Salvo - deixe em branco para manter)' : 'Senha'">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Max. contas</label>
-                            <input type="number" class="form-control" x-model="serverForm.max_accounts" min="0">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Datacenter</label>
-                            <input type="text" class="form-control" x-model="serverForm.datacenter">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Localizacao</label>
-                            <input type="text" class="form-control" x-model="serverForm.location">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">NS primario</label>
-                            <input type="text" class="form-control" x-model="serverForm.nameserver1">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">NS secundario</label>
-                            <input type="text" class="form-control" x-model="serverForm.nameserver2">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">NS terciario</label>
-                            <input type="text" class="form-control" x-model="serverForm.nameserver3">
-                        </div>
-                        <div class="col-12">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" x-model="serverForm.active">
-                                        <label class="form-check-label">Servidor ativo</label>
-                                    </div>
+                        <!-- Seção 2: Autenticação -->
+                        <div class="row g-3 mb-4 bg-light p-3 rounded-3 mx-0">
+                            <div class="col-12 px-0"><h6 class="fw-bold border-bottom pb-2 text-primary text-uppercase small ls-1"><i class="bi bi-shield-lock me-1"></i> Autenticação e Driver</h6></div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Tipo</label>
+                                <select class="form-select" x-model="serverForm.type">
+                                    <option value="shared">Shared (Compartilhada)</option>
+                                    <option value="reseller">Reseller (Revenda)</option>
+                                    <option value="vps">VPS</option>
+                                    <option value="dedicated">Dedicated (Dedicado)</option>
+                                    <option value="other">Outro</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Módulo <span class="text-danger">*</span></label>
+                                <select class="form-select border-primary text-primary" x-model="serverForm.module" @change="applyModuleDefaults()" required>
+                                    <option value="whm">WHM/cPanel</option>
+                                    <option value="whmsonic">WHMSonic (Streaming)</option>
+                                    <option value="aapanel">AAPanel</option>
+                                    <option value="plesk">Plesk</option>
+                                    <option value="directadmin">DirectAdmin</option>
+                                    <option value="hestia">HestiaCP</option>
+                                    <option value="none">Nenhum (Manual)</option>
+                                </select>
+                            </div>
+
+                            <div class="col-12" x-show="moduleHelpText()">
+                                <div class="alert alert-info py-2 mb-0" style="font-size: .75rem">
+                                    <i class="bi bi-lightbulb me-1"></i> <span x-text="moduleHelpText()"></span>
                                 </div>
-                                <div class="col-md-6">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Usuário API <span x-show="requiresUsername()">*</span></label>
+                                <input type="text" class="form-control" x-model="serverForm.username" :required="requiresUsername()" placeholder="root ou usuário revenda">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">API Key / Token <span x-show="requiresApiKey()">*</span></label>
+                                <input type="password" class="form-control" x-model="serverForm.api_key" 
+                                       :placeholder="editingId ? '******** (Salvo)' : 'Cole o token gerado aqui'">
+                            </div>
+                            <div class="col-md-6" x-show="requiresPassword()">
+                                <label class="form-label fw-semibold">Senha <span x-show="requiresPassword()">*</span></label>
+                                <input type="password" class="form-control" x-model="serverForm.password"
+                                       :placeholder="editingId ? '******** (Salvo)' : 'Senha do usuário root'">
+                            </div>
+                        </div>
+
+                        <!-- Seção 3: Capacidade e DNS -->
+                        <div class="row g-3">
+                            <div class="col-12"><h6 class="fw-bold border-bottom pb-2 text-primary text-uppercase small ls-1"><i class="bi bi-gear me-1"></i> Capacidade e DNS</h6></div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Max. contas</label>
+                                <input type="number" class="form-control" x-model="serverForm.max_accounts" min="0">
+                                <div class="text-muted" style="font-size: .7rem">0 = Sem limite</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Datacenter</label>
+                                <input type="text" class="form-control" x-model="serverForm.datacenter" placeholder="Ex: OVH, AWS">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Localização</label>
+                                <input type="text" class="form-control" x-model="serverForm.location" placeholder="Ex: Brasil">
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Nameserver 1</label>
+                                <input type="text" class="form-control" x-model="serverForm.nameserver1" placeholder="ns1.seusite.com">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Nameserver 2</label>
+                                <input type="text" class="form-control" x-model="serverForm.nameserver2" placeholder="ns2.seusite.com">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold">Nameserver 3</label>
+                                <input type="text" class="form-control" x-model="serverForm.nameserver3" placeholder="Opcional">
+                            </div>
+
+                            <div class="col-12 border-top pt-3 mt-3">
+                                <div class="d-flex gap-4">
                                     <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" x-model="serverForm.secure">
-                                        <label class="form-check-label">Usar HTTPS na API</label>
+                                        <input class="form-check-input" type="checkbox" x-model="serverForm.active" id="swActive">
+                                        <label class="form-check-label fw-semibold" for="swActive">Servidor Ativo</label>
+                                    </div>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" x-model="serverForm.secure" id="swSecure">
+                                        <label class="form-check-label fw-semibold" for="swSecure">Usar HTTPS/SSL</label>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
+                    <div class="modal-footer bg-light">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary" :disabled="saving">
+                        <button type="submit" class="btn btn-primary px-5 shadow" :disabled="saving">
                             <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
-                            <span x-text="editingId ? 'Salvar alteracoes' : 'Cadastrar servidor'"></span>
+                            <span x-text="editingId ? 'Salvar Alterações' : 'Cadastrar Servidor'"></span>
                         </button>
                     </div>
                 </form>

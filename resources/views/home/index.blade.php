@@ -52,49 +52,70 @@
 
 {{-- Destaques em Carrossel --}}
 @php
+// Buscar todos os produtos em destaque (featured) de todos os grupos
 $destaques = collect();
-$categorias = ['hospedagem', 'revenda', 'vps', 'servidor', 'cloud', 'streaming'];
 
 if (isset($groups) && $groups->count()) {
+    $featuredProducts = collect();
+
     foreach ($groups as $group) {
-        $catKey = strtolower($group->name);
-        $foundCat = null;
-        foreach ($categorias as $cat) {
-            if (str_contains($catKey, $cat)) {
-                $foundCat = $cat;
-                break;
-            }
+        // Pegar produtos featured deste grupo
+        $groupFeatured = $group->products->where('featured', true);
+        foreach ($groupFeatured as $prod) {
+            $featuredProducts->push([
+                'produto' => $prod,
+                'grupo' => $group,
+            ]);
         }
+    }
 
-        if ($foundCat && !$destaques->has($foundCat)) {
-            $produto = $group->products->first(function($p) {
-                return $p->featured || $p->prices['monthly'] ?? null;
-            }) ?? $group->products->first();
-
-            if ($produto) {
-                $destaques->put($foundCat, [
-                    'categoria' => $group->name,
-                    'slug' => $group->slug,
-                    'produto' => $produto,
-                    'tipo' => $foundCat,
-                    'icone' => match($foundCat) {
-                        'hospedagem' => 'bi-hdd-stack',
-                        'revenda' => 'bi-shop',
-                        'vps' => 'bi-server',
-                        'servidor' => 'bi-pc-display',
-                        'cloud' => 'bi-cloud',
-                        'streaming' => 'bi-broadcast',
-                        default => 'bi-box-seam'
-                    }
+    // Se não houver produtos featured, pegar o primeiro produto de cada grupo (até 6)
+    if ($featuredProducts->isEmpty()) {
+        foreach ($groups as $group) {
+            $firstProd = $group->products->first();
+            if ($firstProd) {
+                $featuredProducts->push([
+                    'produto' => $firstProd,
+                    'grupo' => $group,
                 ]);
             }
+            if ($featuredProducts->count() >= 6) break;
         }
+    }
+
+    // Limitar a 6 produtos
+    $featuredProducts = $featuredProducts->take(6);
+
+    // Mapear para o formato do carrossel
+    foreach ($featuredProducts as $item) {
+        $produto = $item['produto'];
+        $group = $item['grupo'];
+        $catKey = strtolower($group->name);
+
+        $icone = match(true) {
+            str_contains($catKey, 'hospedagem') => 'bi-hdd-stack',
+            str_contains($catKey, 'revenda') => 'bi-shop',
+            str_contains($catKey, 'vps') => 'bi-server',
+            str_contains($catKey, 'servidor') => 'bi-pc-display',
+            str_contains($catKey, 'cloud') => 'bi-cloud',
+            str_contains($catKey, 'streaming') => 'bi-broadcast',
+            default => 'bi-box-seam'
+        };
+
+        $destaques->push([
+            'categoria' => $group->name,
+            'slug' => $group->slug,
+            'produto' => $produto,
+            'tipo' => 'produto',
+            'icone' => $icone,
+        ]);
     }
 }
 
+// Adicionar anúncio apenas se houver espaço (máx 6 total)
 if ($destaques->count() < 6 && isset($announcements) && $announcements->count()) {
     $anuncio = $announcements->first();
-    $destaques->put('anuncio', [
+    $destaques->push([
         'categoria' => 'Novidade',
         'slug' => null,
         'anuncio' => $anuncio,
@@ -102,8 +123,6 @@ if ($destaques->count() < 6 && isset($announcements) && $announcements->count())
         'icone' => 'bi-megaphone'
     ]);
 }
-
-$destaques = $destaques->take(6);
 @endphp
 
 @if($destaques->count())
@@ -134,12 +153,13 @@ $destaques = $destaques->take(6);
 
         {{-- Carrossel --}}
         <div x-ref="track" @scroll.throttle="updateScroll()"
-             class="carousel-track flex gap-4 overflow-x-auto pb-4">
-            @foreach($destaques as $tipo => $item)
-            <div class="carousel-item flex-shrink-0 w-[260px]">
-                @if($tipo === 'anuncio' && isset($item['anuncio']))
+             class="carousel-track flex gap-4 overflow-x-auto pb-4 px-1">
+            @foreach($destaques as $item)
+            @php $index = $loop->index; @endphp
+            <div class="carousel-item flex-shrink-0 w-[240px] snap-start">
+                @if($item['tipo'] === 'anuncio' && isset($item['anuncio']))
                 {{-- Card de Anúncio --}}
-                <div class="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl p-5 text-white h-full flex flex-col">
+                <div class="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl p-5 text-white h-full min-h-[280px] flex flex-col">
                     <div class="flex items-center gap-2 mb-3">
                         <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
                             <i class="bi {{ $item['icone'] }} text-white"></i>
@@ -155,26 +175,26 @@ $destaques = $destaques->take(6);
                 @else
                 {{-- Card de Produto --}}
                 @php $produto = $item['produto']; $preco = $produto->prices['monthly'] ?? $produto->pricing->first()?->price ?? null; @endphp
-                <div class="bg-white rounded-xl border {{ $produto->featured ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-100' }} shadow-sm p-5 h-full flex flex-col relative hover:shadow-md transition">
+                <div class="bg-white rounded-xl border {{ $produto->featured ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-200' }} shadow-sm p-5 h-full min-h-[280px] flex flex-col relative hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
                     @if($produto->featured)
-                    <div class="absolute -top-2 left-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">⭐ Destaque</div>
+                    <div class="absolute -top-2 left-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full shadow-sm">⭐ Destaque</div>
                     @endif
                     <div class="flex items-center gap-2 mb-3">
-                        <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                        <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
                             <i class="bi {{ $item['icone'] }} text-blue-600"></i>
                         </div>
-                        <span class="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{{ $item['categoria'] }}</span>
+                        <span class="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded truncate">{{ $item['categoria'] }}</span>
                     </div>
-                    <h3 class="font-bold text-gray-900 mb-1">{{ Str::limit($produto->name, 35) }}</h3>
+                    <h3 class="font-bold text-gray-900 mb-1 text-base leading-tight">{{ Str::limit($produto->name, 30) }}</h3>
                     @if($produto->tagline)
-                    <p class="text-gray-500 text-xs mb-3 line-clamp-2">{{ $produto->tagline }}</p>
+                    <p class="text-gray-500 text-xs mb-3 line-clamp-2 flex-1">{{ $produto->tagline }}</p>
                     @else
-                    <p class="text-gray-400 text-xs mb-3">{{ Str::limit($produto->description ?? 'Serviço profissional', 50) }}</p>
+                    <p class="text-gray-400 text-xs mb-3 line-clamp-2 flex-1">{{ Str::limit($produto->description ?? 'Serviço profissional', 50) }}</p>
                     @endif
                     <div class="mt-auto pt-3 border-t border-gray-100">
                         @if($preco)
                         <div class="flex items-baseline gap-1 mb-3">
-                            <span class="text-2xl font-extrabold text-gray-900">R$ {{ number_format($preco, 2, ',', '.') }}</span>
+                            <span class="text-xl font-extrabold text-gray-900">R$ {{ number_format($preco, 2, ',', '.') }}</span>
                             <span class="text-gray-400 text-xs">/mês</span>
                         </div>
                         @else
@@ -183,7 +203,7 @@ $destaques = $destaques->take(6);
                         @php
                         $checkoutItem = json_encode([['product_id' => $produto->id, 'cycle' => $produto->pricing->first()?->billing_cycle ?? 'monthly', 'domain' => '']]);
                         @endphp
-                        <a href="{{ route('checkout') }}?items={{ urlencode($checkoutItem) }}" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm py-2.5 rounded-lg transition">
+                        <a href="{{ route('checkout') }}?items={{ urlencode($checkoutItem) }}" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm py-2.5 rounded-lg transition shadow-sm hover:shadow-md">
                             Contratar
                         </a>
                     </div>
@@ -195,9 +215,10 @@ $destaques = $destaques->take(6);
 
         {{-- Dots --}}
         <div class="flex justify-center gap-2 mt-4">
-            @foreach($destaques as $i => $item)
-            <div class="w-2 h-2 rounded-full transition-all duration-300"
-                 :class="Math.round(scroll / 270) === {{ $loop->index }} ? 'bg-blue-600 w-4' : 'bg-gray-300'"></div>
+            @foreach($destaques as $item)
+            <button @click="$refs.track.scrollTo({ left: {{ $loop->index }} * 250, behavior: 'smooth' }); setTimeout(() => updateScroll(), 300)"
+                    class="h-2 rounded-full transition-all duration-300"
+                    :class="Math.round(scroll / 250) === {{ $loop->index }} ? 'bg-blue-600 w-6' : 'bg-gray-300 w-2 hover:bg-gray-400'"></button>
             @endforeach
         </div>
     </div>

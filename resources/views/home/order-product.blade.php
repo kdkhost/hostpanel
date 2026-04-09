@@ -1,38 +1,14 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contratar {{ $product->name }} — {{ config('app.name') }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>[x-cloak]{display:none}</style>
-</head>
-<body class="bg-gray-50 text-gray-900">
+@extends('home.layouts.app')
 
-{{-- Navbar --}}
-<nav class="bg-white shadow-sm sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
-        <a href="{{ route('home') }}" class="flex items-center gap-2 font-extrabold text-gray-900">
-            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"><i class="bi bi-server text-white text-sm"></i></div>
-            {{ config('app.name') }}
-        </a>
-        <div class="flex items-center gap-3">
-            <a href="{{ route('cart') }}" class="relative p-2 text-gray-500 hover:text-blue-600">
-                <i class="bi bi-cart3 text-xl"></i>
-                <span id="cart-badge" class="hidden absolute -top-0.5 -right-0.5 w-4 h-4 bg-blue-600 text-white text-xs rounded-full flex items-center justify-center font-bold"></span>
-            </a>
-            @auth('client')
-            <a href="{{ route('client.dashboard') }}" class="bg-blue-600 text-white text-sm font-bold px-4 py-2 rounded-lg">Painel</a>
-            @else
-            <a href="{{ route('client.login') }}" class="text-sm font-semibold text-gray-600 hover:text-gray-900">Entrar</a>
-            <a href="{{ route('client.register') }}" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold px-4 py-2 rounded-lg">Cadastrar</a>
-            @endauth
-        </div>
-    </div>
-</nav>
+@section('title', 'Contratar ' . ($product->name ?? 'Produto') . ' — ' . config('app.name'))
+@section('meta-description', 'Configure seu plano de hospedagem e finalize a compra.')
 
+@push('head')
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<style>[x-cloak]{display:none}</style>
+@endpush
+
+@section('content')
 {{-- Breadcrumb --}}
 <div class="bg-white border-b border-gray-100">
     <div class="max-w-5xl mx-auto px-4 py-3 flex items-center gap-2 text-sm text-gray-500">
@@ -216,7 +192,7 @@ $pricingMap = $product->pricing->keyBy('billing_cycle');
 
         {{-- Resumo lateral --}}
         <div class="lg:col-span-1">
-            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sticky top-20">
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sticky top-24">
                 <h3 class="font-bold text-gray-900 mb-4">Resumo do Pedido</h3>
 
                 <div class="flex items-start gap-3 mb-5 pb-5 border-b border-gray-100">
@@ -276,11 +252,9 @@ $pricingMap = $product->pricing->keyBy('billing_cycle');
         </div>
     </div>
 </div>
+@endsection
 
-<footer class="bg-slate-900 text-slate-500 py-8 text-center text-sm mt-8">
-    &copy; {{ date('Y') }} {{ config('app.name') }}. Todos os direitos reservados.
-</footer>
-
+@push('scripts')
 <script>
 const PRICING = @json($pricingMap->map(fn($p) => ['price' => (float)$p->price, 'setup_fee' => (float)($p->setup_fee ?? 0)]));
 const CYCLE_LABELS = { monthly:'Mensal', quarterly:'Trimestral', semiannually:'Semestral', annually:'Anual', biennially:'Bienal', triennially:'Trienal', free:'Gratuito' };
@@ -346,16 +320,8 @@ function orderProduct(productId, defaultCycle, prices) {
             cart.push(item);
             localStorage.setItem('hostpanel_cart', JSON.stringify(cart));
             window.location = '{{ route("cart") }}';
-        },
-
-        init() {
-            // Badge do carrinho
-            const cart = JSON.parse(localStorage.getItem('hostpanel_cart') || '[]');
-            const badge = document.getElementById('cart-badge');
-            if (badge && cart.length > 0) { badge.textContent = cart.length; badge.classList.remove('hidden'); }
         }
     }
 }
 </script>
-</body>
-</html>
+@endpush

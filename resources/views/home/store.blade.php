@@ -23,6 +23,7 @@
             <a href="{{ route('plans') }}" class="hover:text-gray-900">Planos</a>
             <a href="{{ route('domain.search') }}" class="hover:text-gray-900">Domínios</a>
             <a href="{{ route('kb') }}" class="hover:text-gray-900">Suporte</a>
+            <a href="{{ route('contact') }}" class="hover:text-gray-900">Contato</a>
         </div>
         <div class="flex items-center gap-2">
             <a href="{{ route('cart') }}" class="relative p-2 text-gray-500 hover:text-blue-600">

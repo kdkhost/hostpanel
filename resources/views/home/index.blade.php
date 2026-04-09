@@ -35,6 +35,7 @@
                     <a href="#plans" :class="scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/80 hover:text-white'" class="text-sm font-medium">Planos</a>
                     <a href="{{ route('domain.search') }}" :class="scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/80 hover:text-white'" class="text-sm font-medium">Domínios</a>
                     <a href="{{ route('kb') }}" :class="scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/80 hover:text-white'" class="text-sm font-medium">Suporte</a>
+                    <a href="{{ route('contact') }}" :class="scrolled ? 'text-gray-600 hover:text-gray-900' : 'text-white/80 hover:text-white'" class="text-sm font-medium">Contato</a>
                 </div>
                 <div class="flex items-center gap-3">
                     <a href="{{ route('client.login') }}" :class="scrolled ? 'text-gray-700 hover:text-gray-900' : 'text-white/90 hover:text-white'" class="text-sm font-semibold">Entrar</a>

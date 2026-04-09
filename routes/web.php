@@ -68,6 +68,8 @@ Route::get('/paginas/{slug}', [\App\Http\Controllers\HomeController::class, 'pag
 Route::get('/base-conhecimento', [\App\Http\Controllers\HomeController::class, 'knowledgeBase'])->name('kb');
 Route::get('/base-conhecimento/{slug}', [\App\Http\Controllers\HomeController::class, 'kbArticle'])->name('kb.article');
 Route::get('/anuncios',    [\App\Http\Controllers\HomeController::class, 'announcements'])->name('announcements');
+Route::get('/contato',     [\App\Http\Controllers\HomeController::class, 'contact'])->name('contact');
+Route::post('/contato',    [\App\Http\Controllers\HomeController::class, 'contactSubmit'])->name('contact.submit');
 
 /*
 |--------------------------------------------------------------------------

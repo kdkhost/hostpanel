@@ -28,6 +28,7 @@
                 <a href="{{ route('store') }}" class="hover:text-gray-900">Loja</a>
                 <a href="{{ route('domain.search') }}" class="hover:text-gray-900">Domínios</a>
                 <a href="{{ route('kb') }}" class="hover:text-gray-900">Suporte</a>
+                <a href="{{ route('contact') }}" class="hover:text-gray-900">Contato</a>
             </div>
             <div class="flex items-center gap-3">
                 <a href="{{ route('client.login') }}" class="text-gray-600 hover:text-gray-900 font-semibold text-sm">Entrar</a>

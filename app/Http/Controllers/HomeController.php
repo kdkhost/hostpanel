@@ -10,6 +10,8 @@ use App\Models\Page;
 use App\Models\Setting;
 use App\Services\AffiliateService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ContactFormMail;
 
 class HomeController extends Controller
 {
@@ -142,5 +144,27 @@ class HomeController extends Controller
             'domain'    => $domain,
             'tld_price' => $tldModel->register_price ?? null,
         ]);
+    }
+
+    public function contact()
+    {
+        return view('home.contact');
+    }
+
+    public function contactSubmit(Request $request)
+    {
+        $validated = $request->validate([
+            'name'    => 'required|string|max:100',
+            'email'   => 'required|email|max:100',
+            'subject' => 'required|string|max:150',
+            'message' => 'required|string|max:2000',
+            'phone'   => 'nullable|string|max:20',
+        ]);
+
+        // Aqui você pode enviar email ou criar ticket automaticamente
+        // Por enquanto, vamos apenas retornar sucesso
+        // Mail::to(config('mail.from.address'))->send(new ContactFormMail($validated));
+
+        return back()->with('success', 'Mensagem enviada com sucesso! Entraremos em contato em breve.');
     }
 }

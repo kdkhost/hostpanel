@@ -80,4 +80,9 @@ class Product extends Model
         }
         return asset('images/product-default.svg');
     }
+
+    public function getPricesAttribute(): array
+    {
+        return $this->pricing->pluck('price', 'billing_cycle')->toArray();
+    }
 }

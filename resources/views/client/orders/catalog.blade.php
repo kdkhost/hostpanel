@@ -83,11 +83,13 @@
                         <select class="flex-1 min-w-0 border border-gray-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:border-blue-500 bg-white"
                             x-model="selectedCycles[{{ $product->id }}]"
                             title="Ciclo de cobrança">
-                            @foreach(array_keys($product->prices ?? []) as $cycle)
-                            <option value="{{ $cycle }}">
-                                {{ ['monthly'=>'Mensal','quarterly'=>'Trimestral','semiannually'=>'Semestral','annually'=>'Anual','biennially'=>'Bienal','free'=>'Grátis'][$cycle] ?? ucfirst($cycle) }}
+                            @forelse($product->pricing ?? [] as $price)
+                            <option value="{{ $price->billing_cycle }}">
+                                {{ $price->cycle_label }} — {{ $price->formatted_price }}
                             </option>
-                            @endforeach
+                            @empty
+                            <option value="">Sem preço configurado</option>
+                            @endforelse
                         </select>
                         <button class="{{ $product->featured ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-900 hover:bg-gray-800' }} text-white font-semibold px-4 py-2 rounded-lg text-sm transition whitespace-nowrap"
                             @click="addToCart({{ $product->id }}, '{{ $product->name }}', selectedCycles[{{ $product->id }}])">
@@ -141,7 +143,7 @@
 function catalogPage() {
     return {
         cart: [], coupon: '',
-        selectedCycles: @json(collect($groups)->flatMap->products->mapWithKeys(fn($p) => [$p->id => array_key_first($p->prices ?? ['monthly' => 0])])),
+        selectedCycles: @json(collect($groups)->flatMap->products->mapWithKeys(fn($p) => [$p->id => $p->pricing->first()?->billing_cycle ?? 'monthly'])),
 
         addToCart(id, name, cycle) {
             const labels = {monthly:'Mensal',quarterly:'Trimestral',semiannually:'Semestral',annually:'Anual',biennially:'Bienal',free:'Grátis'};

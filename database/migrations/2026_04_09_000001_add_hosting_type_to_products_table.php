@@ -12,18 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->string('type')->default('hosting')->change();
-        });
+        DB::statement("ALTER TABLE `products` MODIFY COLUMN `type` ENUM('shared','reseller','vps','dedicated','domain','addon','hosting','other') NOT NULL DEFAULT 'hosting'");
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->enum('type', ['shared', 'reseller', 'vps', 'dedicated', 'domain', 'addon', 'other'])->default('shared')->change();
-        });
+        DB::statement("ALTER TABLE `products` MODIFY COLUMN `type` ENUM('shared','reseller','vps','dedicated','domain','addon','other') NOT NULL DEFAULT 'shared'");
     }
 };

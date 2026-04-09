@@ -29,7 +29,7 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->text('description')->nullable();
             $table->text('welcome_email')->nullable();
-            $table->enum('type', ['shared', 'reseller', 'vps', 'dedicated', 'domain', 'addon', 'other'])->default('shared');
+            $table->enum('type', ['shared', 'reseller', 'vps', 'dedicated', 'domain', 'addon', 'hosting', 'other'])->default('hosting');
             $table->string('module')->default('none')->comment('cpanel, plesk, directadmin, etc.');
             $table->enum('billing_cycle_type', ['one_time', 'recurring'])->default('recurring');
             $table->boolean('require_domain')->default(false);

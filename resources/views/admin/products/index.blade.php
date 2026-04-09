@@ -77,8 +77,8 @@
     </div>
 
     {{-- Modal Produto --}}
-    <div class="modal fade" id="productModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal fade" id="productModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content shadow-lg border-0">
                 <div class="modal-header border-0 bg-light pb-0">
                     <div class="w-100">
@@ -107,7 +107,7 @@
                     </div>
                 </div>
                 <form @submit.prevent="save">
-                    <div class="modal-body py-4" style="min-height: 400px; overflow-y: auto;">
+                    <div class="modal-body py-4" style="min-height: 350px; max-height: 60vh; overflow-y: auto;">
                         <!-- Passo 1: Informações -->
                         <div x-show="step === 1" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-4">
                             @if($groups->isEmpty())
@@ -176,11 +176,10 @@
                                         <label class="form-label fw-semibold small" x-text="cycle.label"></label>
                                         <div class="input-group input-group-sm shadow-sm">
                                             <span class="input-group-text bg-light text-muted">R$</span>
-                                            <input type="number" step="0.01" class="form-control fw-bold" 
-                                                   :x-model="`form.prices.${cycle.key}`" 
-                                                   :value="form.prices[cycle.key]" 
+                                            <input type="number" step="0.01" min="0" class="form-control fw-bold" 
+                                                   :value="form.prices[cycle.key] || ''"
                                                    @input="form.prices[cycle.key] = $event.target.value"
-                                                   placeholder="0,00">
+                                                   placeholder="0.00">
                                         </div>
                                     </div>
                                 </template>
@@ -270,34 +269,52 @@ function productsTable() {
             // Transforma o objeto de preços em um array para o servidor
             const pricing = [];
             for (const [cycle, value] of Object.entries(this.form.prices || {})) {
-                if (value !== null && value !== '' && value > 0) {
+                const numVal = parseFloat(value);
+                if (!isNaN(numVal) && numVal > 0) {
                     pricing.push({
                         billing_cycle: cycle,
                         currency: 'BRL',
-                        price: parseFloat(value),
+                        price: numVal,
                         setup_fee: 0,
                         active: true
                     });
                 }
             }
+
+            if (pricing.length === 0) {
+                this.saving = false;
+                HostPanel.toast('Informe pelo menos um preço.', 'warning');
+                this.step = 2;
+                return;
+            }
             
-            const payload = { ...this.form, pricing: pricing };
+            const payload = { ...this.form, pricing, billing_cycle_type: 'recurring' };
+            delete payload.prices;
+            delete payload.services_count;
+            delete payload.group;
+            delete payload.slug;
+            
             const url    = this.form.id ? `/admin/produtos/${this.form.id}` : '/admin/produtos';
             const method = this.form.id ? 'PUT' : 'POST';
             
             try {
                 const d = await HostPanel.fetch(url, { method, body: JSON.stringify(payload) });
                 this.saving = false;
-                if (d.product || d.message?.includes('sucesso')) {
+                if (d.errors) {
+                    const msgs = Object.values(d.errors).flat().join('<br>');
+                    HostPanel.toast(msgs, 'danger');
+                    return;
+                }
+                if (d.product || d.message) {
                     bootstrap.Modal.getInstance(document.getElementById('productModal'))?.hide();
-                    HostPanel.toast('Produto salvo com sucesso!');
+                    HostPanel.toast(d.message || 'Produto salvo com sucesso!');
                     this.load();
                 } else {
-                    HostPanel.toast(d.message || 'Erro ao salvar.', 'danger');
+                    HostPanel.toast('Erro inesperado ao salvar.', 'danger');
                 }
             } catch (e) {
                 this.saving = false;
-                HostPanel.toast('Falha na operacao de salvamento.', 'danger');
+                HostPanel.toast('Falha na operação de salvamento.', 'danger');
             }
         },
 

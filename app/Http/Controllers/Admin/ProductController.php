@@ -110,7 +110,15 @@ class ProductController extends Controller
 
         $data['module'] = strtolower(trim((string) ($data['module'] ?? 'none'))) ?: 'none';
         $data['billing_cycle_type'] = $data['billing_cycle_type'] ?? 'recurring';
-        $data['slug'] = Str::slug($request->input('name'));
+
+        // Generate unique slug
+        $baseSlug = Str::slug($request->input('name'));
+        $slug = $baseSlug;
+        $i = 1;
+        while (Product::withTrashed()->where('slug', $slug)->where('id', '!=', $request->route('product')?->id ?? 0)->exists()) {
+            $slug = $baseSlug . '-' . $i++;
+        }
+        $data['slug'] = $slug;
 
         return $data;
     }

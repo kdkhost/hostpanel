@@ -118,7 +118,11 @@ class ServerController extends Controller
 
         $server = Server::create($data);
 
-        ServerHealthCheckJob::dispatchSync($server->id);
+        try {
+            ServerHealthCheckJob::dispatchSync($server->id);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Health check falhou ao criar servidor #{$server->id}: " . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Servidor cadastrado com sucesso!',
@@ -164,7 +168,11 @@ class ServerController extends Controller
 
         $server->update($data);
 
-        ServerHealthCheckJob::dispatchSync($server->id);
+        try {
+            ServerHealthCheckJob::dispatchSync($server->id);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning("Health check falhou ao atualizar servidor #{$server->id}: " . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Servidor atualizado!',

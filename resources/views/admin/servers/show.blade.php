@@ -7,7 +7,7 @@
 @endsection
 
 @section('content')
-<div x-data="serverShow()" x-init="init()" class="row g-4">
+<div x-data="serverShow()" x-init="init()" class="row g-4" id="serverShowRoot">
 
     {{-- Coluna Principal --}}
     <div class="col-lg-8">
@@ -33,7 +33,7 @@
                 </div>
                 <div class="d-flex align-items-center gap-3">
                     <div class="form-check form-switch mb-0" title="Ativar/Desativar Servidor">
-                        <input class="form-check-input" type="checkbox" :checked="!!{{ $server->active ? 'true' : 'false' }}" @change="toggleActive()">
+                        <input class="form-check-input" type="checkbox" :checked="serverActive" @change="toggleActive()">
                     </div>
                     <span class="badge rounded-pill small"
                           :class="health?.network_status === 'online' ? 'bg-success' : (health?.network_status === 'degraded' ? 'bg-warning text-dark' : (health?.network_status === 'unknown' ? 'bg-secondary' : 'bg-danger'))"
@@ -209,12 +209,18 @@
                     </thead>
                     <tbody>
                         @forelse($services as $svc)
-                        <tr>
+                        <tr x-show="!search || '{{ strtolower($svc->domain . ' ' . ($svc->username ?? '') . ' ' . ($svc->client?->name ?? '')) }}'.includes(search.toLowerCase())">
                             <td>
                                 <div class="fw-semibold small">{{ $svc->domain }}</div>
                                 <code class="text-muted" style="font-size:.7rem">{{ $svc->username }}</code>
                             </td>
-                            <td><a href="{{ route('admin.clients.show', $svc->client) }}" class="text-decoration-none small">{{ $svc->client?->name }}</a></td>
+                            <td>
+                                @if($svc->client)
+                                    <a href="{{ route('admin.clients.show', $svc->client) }}" class="text-decoration-none small">{{ $svc->client->name }}</a>
+                                @else
+                                    <span class="text-muted small">—</span>
+                                @endif
+                            </td>
                             <td><span class="badge bg-{{ ['active'=>'success','suspended'=>'warning','terminated'=>'danger','cancelled'=>'secondary'][$svc->status] ?? 'secondary' }} bg-opacity-75">{{ ucfirst($svc->status) }}</span></td>
                             <td><small class="{{ $svc->next_due_date && \Carbon\Carbon::parse($svc->next_due_date)->isPast() ? 'text-danger fw-semibold' : 'text-muted' }}">
                                 {{ $svc->next_due_date ? \Carbon\Carbon::parse($svc->next_due_date)->format('d/m/Y') : '—' }}
@@ -229,9 +235,6 @@
                     </tbody>
                 </table>
             </div>
-            @if($services instanceof \Illuminate\Pagination\LengthAwarePaginator)
-            <div class="card-footer bg-white">{{ $services->links() }}</div>
-            @endif
         </div>
     </div>
 
@@ -503,6 +506,7 @@
 function serverShow() {
     return {
         health: null,
+        serverActive: {{ $server->active ? 'true' : 'false' }},
         step: 1,
         checkingHealth: false,
         savingEdit: false,
@@ -572,11 +576,14 @@ function serverShow() {
             try {
                 const d = await HostPanel.fetch('{{ route("admin.servers.status", $server) }}', { method: 'POST' });
                 if (d.ok) {
+                    this.serverActive = !!d.active;
                     HostPanel.toast(d.message || 'Status atualizado!');
                 } else {
+                    this.serverActive = !this.serverActive;
                     HostPanel.toast(d.message || 'Erro ao atualizar status', 'danger');
                 }
             } catch (e) {
+                this.serverActive = !this.serverActive;
                 HostPanel.toast('Erro na conexão.', 'danger');
             }
         },

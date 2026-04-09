@@ -353,134 +353,142 @@
 
 <div class="modal fade" id="editServerModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Editar servidor</h5>
-                <button class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-header border-0 bg-light pb-0">
+                <div class="w-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="modal-title fw-bold text-primary">Editar Servidor</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <!-- Wizard Progress -->
+                    <div class="d-flex justify-content-between position-relative mb-4 px-2">
+                        <div class="position-absolute top-50 start-0 end-0 translate-middle-y bg-secondary bg-opacity-25" style="height: 2px; z-index: 0;"></div>
+                        <div class="position-absolute top-50 start-0 translate-middle-y bg-primary transition-all" :style="'height: 2px; z-index: 0; width: ' + ((step-1)*50) + '%'"></div>
+                        
+                        <template x-for="i in 3">
+                            <div class="position-relative" style="z-index: 1;">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center shadow-sm transition-all"
+                                     :class="step >= i ? 'bg-primary text-white' : 'bg-white text-muted border'"
+                                     style="width: 32px; height: 32px; font-weight: bold; font-size: 0.85rem;"
+                                     x-text="i"></div>
+                                <div class="position-absolute start-50 translate-middle-x mt-1 text-nowrap" 
+                                     style="font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;"
+                                     :class="step >= i ? 'text-primary' : 'text-muted'"
+                                     x-text="['Conexão', 'Acesso', 'DNS'][i-1]"></div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
             </div>
             <form @submit.prevent="updateServer">
-                <div class="modal-body">
-                    <!-- Seção 1: Identificação e Rede -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12"><h6 class="fw-bold border-bottom pb-2 text-primary text-uppercase small ls-1"><i class="bi bi-info-circle me-1"></i> Identificação e Rede</h6></div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" x-model="editForm.name" required placeholder="Ex: Servidor Principal">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Hostname <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" x-model="editForm.hostname" required placeholder="whm.seusite.com">
-                        </div>
-                        <div class="col-md-6 col-lg-4">
-                            <label class="form-label fw-semibold">IP Primário <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" x-model="editForm.ip_address" required>
-                        </div>
-                        <div class="col-md-6 col-lg-4">
-                            <label class="form-label fw-semibold">IP Secundário</label>
-                            <input type="text" class="form-control" x-model="editForm.ip_address_secondary">
-                        </div>
-                        <div class="col-md-6 col-lg-4">
-                            <label class="form-label fw-semibold">Porta API</label>
-                            <input type="number" class="form-control" x-model="editForm.port" min="1" max="65535">
-                        </div>
-                    </div>
-
-                    <!-- Seção 2: Driver e Autenticação -->
-                    <div class="row g-3 mb-4 bg-light p-3 rounded-3 mx-0 border">
-                        <div class="col-12 px-0"><h6 class="fw-bold border-bottom pb-2 text-primary text-uppercase small ls-1"><i class="bi bi-shield-lock me-1"></i> Autenticação e Driver</h6></div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Tipo</label>
-                            <select class="form-select" x-model="editForm.type">
-                                <option value="shared">Shared (Compartilhada)</option>
-                                <option value="reseller">Reseller (Revenda)</option>
-                                <option value="vps">VPS</option>
-                                <option value="dedicated">Dedicated (Dedicado)</option>
-                                <option value="other">Outro</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Módulo <span class="text-danger">*</span></label>
-                            <select class="form-select border-primary text-primary" x-model="editForm.module" @change="applyModuleDefaults()" required>
-                                <option value="whm">WHM/cPanel</option>
-                                <option value="whmsonic">WHMSonic</option>
-                                <option value="cpanel">cPanel</option>
-                                <option value="aapanel">AAPanel</option>
-                                <option value="plesk">Plesk</option>
-                                <option value="directadmin">DirectAdmin</option>
-                                <option value="none">Nenhum</option>
-                            </select>
-                        </div>
-                        <div class="col-12" x-show="moduleHelpText()">
-                            <div class="alert alert-warning py-2 small mb-0 border-0">
-                                <i class="bi bi-lightbulb me-1"></i> <span x-text="moduleHelpText()"></span>
+                <div class="modal-body py-4" style="min-height: 320px; overflow-y: auto;">
+                    <!-- Passo 1: Identificação e Rede -->
+                    <div x-show="step === 1" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-4">
+                        <div class="row g-3">
+                            <div class="col-12"><h6 class="fw-bold border-bottom pb-2 text-primary small ls-1 text-uppercase"><i class="bi bi-info-circle me-1"></i> 1. Identificação e Rede</h6></div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" x-model="editForm.name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Hostname <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" x-model="editForm.hostname" required>
+                            </div>
+                            <div class="col-md-6 col-lg-4">
+                                <label class="form-label fw-semibold">IP Primário <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" x-model="editForm.ip_address" required>
+                            </div>
+                            <div class="col-md-6 col-lg-4">
+                                <label class="form-label fw-semibold">IP Secundário</label>
+                                <input type="text" class="form-control shadow-sm" x-model="editForm.ip_address_secondary">
+                            </div>
+                            <div class="col-md-6 col-lg-4">
+                                <label class="form-label fw-semibold">Porta API</label>
+                                <input type="number" class="form-control shadow-sm" x-model="editForm.port">
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Usuário API <span x-show="requiresUsername()">*</span></label>
-                            <input type="text" class="form-control" x-model="editForm.username" :required="requiresUsername()">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">API Key / Token <span x-show="requiresApiKey()">*</span></label>
-                            <input type="password" class="form-control" x-model="editForm.api_key" 
-                                   placeholder="Deixe em branco para manter a atual">
-                        </div>
-                        <div class="col-md-6" x-show="requiresPassword()">
-                            <label class="form-label fw-semibold">Senha root <span x-show="requiresPassword()">*</span></label>
-                            <input type="password" class="form-control" x-model="editForm.password"
-                                   placeholder="Deixe em branco para manter a atual">
-                        </div>
                     </div>
 
-                    <!-- Seção 3: Capacidade e DNS -->
-                    <div class="row g-3 mb-4">
-                        <div class="col-12"><h6 class="fw-bold border-bottom pb-2 text-primary text-uppercase small ls-1"><i class="bi bi-gear me-1"></i> Capacidade e DNS</h6></div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Limite de Contas</label>
-                            <input type="number" class="form-control" x-model="editForm.max_accounts" min="0">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold text-nowrap">Capacitado em (DC)</label>
-                            <input type="text" class="form-control" x-model="editForm.dc_name" placeholder="Ex: OVH, AWS">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">Localização</label>
-                            <input type="text" class="form-control" x-model="editForm.location" placeholder="Ex: Brasil, Miami">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">NS 1</label>
-                            <input type="text" class="form-control" x-model="editForm.nameserver1" placeholder="ns1.seusite.com">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">NS 2</label>
-                            <input type="text" class="form-control" x-model="editForm.nameserver2" placeholder="ns1.seusite.com">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label fw-semibold">NS 3 (Opcional)</label>
-                            <input type="text" class="form-control" x-model="editForm.nameserver3">
-                        </div>
-                    </div>
-
-                    <!-- Rodapé de Configurações -->
-                    <div class="row align-items-center bg-light p-3 rounded-3 mx-0 border mt-2">
-                        <div class="col-md-6 border-end">
-                            <div class="form-check form-switch m-0">
-                                <input class="form-check-input" type="checkbox" x-model="editForm.active" id="editSwActive">
-                                <label class="form-check-label fw-bold" for="editSwActive" style="cursor: pointer">Servidor Ativo</label>
+                    <!-- Passo 2: Autenticação -->
+                    <div x-show="step === 2" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-4" style="display:none">
+                        <div class="row g-3">
+                            <div class="col-12"><h6 class="fw-bold border-bottom pb-2 text-primary small ls-1 text-uppercase"><i class="bi bi-shield-lock me-1"></i> 2. Autenticação e Driver</h6></div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Tipo</label>
+                                <select class="form-select shadow-sm" x-model="editForm.type">
+                                    <option value="shared">Shared (Compartilhada)</option>
+                                    <option value="reseller">Reseller (Revenda)</option>
+                                    <option value="vps">VPS</option>
+                                    <option value="dedicated">Dedicated (Dedicado)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Módulo <span class="text-danger">*</span></label>
+                                <select class="form-select border-primary text-primary fw-bold shadow-sm" x-model="editForm.module" @change="applyModuleDefaults()">
+                                    <option value="whm">WHM / cPanel</option>
+                                    <option value="plesk">Plesk</option>
+                                    <option value="directadmin">DirectAdmin</option>
+                                    <option value="none">Nenhum</option>
+                                </select>
+                            </div>
+                            <div class="col-12" x-show="moduleHelpText()">
+                                <div class="alert alert-warning py-2 small mb-0 shadow-sm border-0">
+                                    <i class="bi bi-lightbulb me-1"></i> <span x-text="moduleHelpText()"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Usuário API</label>
+                                <input type="text" class="form-control shadow-sm" x-model="editForm.username">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">API Key / Token</label>
+                                <input type="password" class="form-control shadow-sm" x-model="editForm.api_key" placeholder="Em branco para manter">
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-check form-switch m-0 ps-5">
-                                <input class="form-check-input" type="checkbox" x-model="editForm.secure" id="editSwSecure">
-                                <label class="form-check-label fw-bold" for="editSwSecure" style="cursor: pointer">Usar HTTPS/SSL</label>
+                    </div>
+
+                    <!-- Passo 3: Capacidade e DNS -->
+                    <div x-show="step === 3" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-4" style="display:none">
+                        <div class="row g-3">
+                            <div class="col-12"><h6 class="fw-bold border-bottom pb-2 text-primary small ls-1 text-uppercase"><i class="bi bi-gear me-1"></i> 3. Configurações e DNS</h6></div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Datacenter (DC)</label>
+                                <input type="text" class="form-control shadow-sm" x-model="editForm.dc_name">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Localização</label>
+                                <input type="text" class="form-control shadow-sm" x-model="editForm.location">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold small">NS 1</label>
+                                <input type="text" class="form-control shadow-sm" x-model="editForm.nameserver1">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold small">NS 2</label>
+                                <input type="text" class="form-control shadow-sm" x-model="editForm.nameserver2">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold small">Status</label>
+                                <div class="form-check form-switch pt-1">
+                                    <input class="form-check-input" type="checkbox" x-model="editForm.active" id="editSwActiveWizard">
+                                    <label class="form-check-label fw-bold" for="editSwActiveWizard">Ativo</label>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer border-0 bg-light">
-                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary px-5 shadow" :disabled="savingEdit">
-                        <span x-show="savingEdit" class="spinner-border spinner-border-sm me-1"></span>Salvar alterações
-                    </button>
+                    <div class="d-flex justify-content-between w-100">
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary px-4 me-2" data-bs-dismiss="modal" x-show="step === 1">Fechar</button>
+                            <button type="button" class="btn btn-outline-secondary px-4 me-2" @click="step--" x-show="step > 1">Voltar</button>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary px-5 shadow-sm" @click="step++" x-show="step < 3">Próximo <i class="bi bi-arrow-right ms-1"></i></button>
+                            <button type="submit" class="btn btn-primary px-5 shadow-sm" x-show="step === 3" :disabled="savingEdit">
+                                <span x-show="savingEdit" class="spinner-border spinner-border-sm me-1"></span>Salvar alterações
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -494,6 +502,7 @@
 function serverShow() {
     return {
         health: null,
+        step: 1,
         checkingHealth: false,
         savingEdit: false,
         hasStoredApiKey: true,
@@ -637,6 +646,7 @@ function serverShow() {
 
         editServer() {
             // Garantir que o formulário resete para os valores do servidor ao abrir
+            this.step = 1;
             this.editForm.api_key = '';
             this.editForm.password = '';
             this.editForm.api_hash = '';

@@ -125,142 +125,145 @@
     <div class="modal fade" id="serverModal" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" x-text="editingId ? 'Editar servidor' : 'Adicionar servidor'"></h5>
-                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header border-0 bg-light pb-0">
+                    <div class="w-100">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="modal-title fw-bold text-primary" x-text="editingId ? 'Editar servidor' : 'Novo Servidor'"></h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <!-- Wizard Progress -->
+                        <div class="d-flex justify-content-between position-relative mb-4 px-2">
+                            <div class="position-absolute top-50 start-0 end-0 translate-middle-y bg-secondary bg-opacity-25" style="height: 2px; z-index: 0;"></div>
+                            <div class="position-absolute top-50 start-0 translate-middle-y bg-primary transition-all" :style="'height: 2px; z-index: 0; width: ' + ((step-1)*50) + '%'"></div>
+                            
+                            <template x-for="i in 3">
+                                <div class="position-relative" style="z-index: 1;">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center shadow-sm transition-all"
+                                         :class="step >= i ? 'bg-primary text-white' : 'bg-white text-muted border'"
+                                         style="width: 32px; height: 32px; font-weight: bold; font-size: 0.85rem;"
+                                         x-text="i"></div>
+                                    <div class="position-absolute start-50 translate-middle-x mt-1 text-nowrap" 
+                                         style="font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;"
+                                         :class="step >= i ? 'text-primary' : 'text-muted'"
+                                         x-text="['Conexão', 'Acesso', 'DNS'][i-1]"></div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
                 </div>
                 <form @submit.prevent="saveServer">
-                    <div class="modal-body">
-                        <!-- Seção 1: Identificação e Rede -->
-                        <div class="row g-3 mb-4">
-                            <div class="col-12"><h6 class="fw-bold border-bottom pb-2 text-primary text-uppercase small ls-1"><i class="bi bi-info-circle me-1"></i> Identificação e Rede</h6></div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" x-model="serverForm.name" required placeholder="Ex: Servidor de Hospedagem #1">
-                                <div class="text-muted" style="font-size: .7rem">Apelido interno para sua organização.</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Hostname <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" x-model="serverForm.hostname" required placeholder="Ex: whm1.seusite.com.br">
-                                <div class="text-muted" style="font-size: .7rem">URL do servidor sem http ou porta.</div>
-                            </div>
-                            <div class="col-md-6 col-lg-4">
-                                <label class="form-label fw-semibold">IP Principal <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" x-model="serverForm.ip_address" required placeholder="0.0.0.0">
-                            </div>
-                            <div class="col-md-6 col-lg-4">
-                                <label class="form-label fw-semibold">IP Secundário</label>
-                                <input type="text" class="form-control" x-model="serverForm.ip_address_secondary" placeholder="Opcional">
-                            </div>
-                            <div class="col-md-6 col-lg-4">
-                                <label class="form-label fw-semibold">Porta API</label>
-                                <input type="number" class="form-control" x-model="serverForm.port" min="1" max="65535" placeholder="Padrão WHM: 2087">
-                            </div>
-                        </div>
-
-                        <!-- Seção 2: Autenticação -->
-                        <div class="row g-3 mb-4 bg-light p-3 rounded-3 mx-0">
-                            <div class="col-12 px-0"><h6 class="fw-bold border-bottom pb-2 text-primary text-uppercase small ls-1"><i class="bi bi-shield-lock me-1"></i> Autenticação e Driver</h6></div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Tipo</label>
-                                <select class="form-select" x-model="serverForm.type">
-                                    <option value="shared">Shared (Compartilhada)</option>
-                                    <option value="reseller">Reseller (Revenda)</option>
-                                    <option value="vps">VPS</option>
-                                    <option value="dedicated">Dedicated (Dedicado)</option>
-                                    <option value="other">Outro</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Módulo <span class="text-danger">*</span></label>
-                                <select class="form-select border-primary text-primary" x-model="serverForm.module" @change="applyModuleDefaults()" required>
-                                    <option value="whm">WHM/cPanel</option>
-                                    <option value="whmsonic">WHMSonic (Streaming)</option>
-                                    <option value="aapanel">AAPanel</option>
-                                    <option value="plesk">Plesk</option>
-                                    <option value="directadmin">DirectAdmin</option>
-                                    <option value="hestia">HestiaCP</option>
-                                    <option value="none">Nenhum (Manual)</option>
-                                </select>
-                            </div>
-
-                            <div class="col-12" x-show="moduleHelpText()">
-                                <div class="alert alert-info py-2 mb-0" style="font-size: .75rem">
-                                    <i class="bi bi-lightbulb me-1"></i> <span x-text="moduleHelpText()"></span>
+                    <div class="modal-body py-4" style="min-height: 320px; overflow-y: auto;">
+                        <!-- Passo 1: Identificação e Rede -->
+                        <div x-show="step === 1" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-4">
+                            <div class="row g-3">
+                                <div class="col-12"><h6 class="fw-bold border-bottom pb-2 text-primary small ls-1 text-uppercase"><i class="bi bi-info-circle me-1"></i> 1. Identificação e Rede</h6></div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control shadow-sm" x-model="serverForm.name" required placeholder="Ex: Servidor BR-01">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Hostname <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control shadow-sm" x-model="serverForm.hostname" required placeholder="whm.seusite.com">
+                                </div>
+                                <div class="col-md-6 col-lg-4">
+                                    <label class="form-label fw-semibold">IP Principal <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control shadow-sm" x-model="serverForm.ip_address" required placeholder="0.0.0.0">
+                                </div>
+                                <div class="col-md-6 col-lg-4">
+                                    <label class="form-label fw-semibold">IP Secundário</label>
+                                    <input type="text" class="form-control shadow-sm border-dashed" x-model="serverForm.ip_address_secondary" placeholder="Opcional">
+                                </div>
+                                <div class="col-md-6 col-lg-4">
+                                    <label class="form-label fw-semibold">Porta API</label>
+                                    <input type="number" class="form-control shadow-sm" x-model="serverForm.port" placeholder="Ex: 2087">
                                 </div>
                             </div>
+                        </div>
 
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Usuário API <span x-show="requiresUsername()">*</span></label>
-                                <input type="text" class="form-control" x-model="serverForm.username" :required="requiresUsername()" placeholder="root ou usuário revenda">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">API Key / Token <span x-show="requiresApiKey()">*</span></label>
-                                <input type="password" class="form-control" x-model="serverForm.api_key" 
-                                       :placeholder="editingId ? '******** (Salvo)' : 'Cole o token gerado aqui'">
-                            </div>
-                            <div class="col-md-6" x-show="requiresPassword()">
-                                <label class="form-label fw-semibold">Senha <span x-show="requiresPassword()">*</span></label>
-                                <input type="password" class="form-control" x-model="serverForm.password"
-                                       :placeholder="editingId ? '******** (Salvo)' : 'Senha do usuário root'">
+                        <!-- Passo 2: Autenticação -->
+                        <div x-show="step === 2" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-4" style="display:none">
+                            <div class="row g-3">
+                                <div class="col-12"><h6 class="fw-bold border-bottom pb-2 text-primary small ls-1 text-uppercase"><i class="bi bi-shield-lock me-1"></i> 2. Autenticação e Driver</h6></div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Tipo</label>
+                                    <select class="form-select shadow-sm" x-model="serverForm.type">
+                                        <option value="shared">Hospedagem</option>
+                                        <option value="reseller">Revenda</option>
+                                        <option value="vps">VPS / Cloud</option>
+                                        <option value="dedicated">Dedicado</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Módulo <span class="text-danger">*</span></label>
+                                    <select class="form-select shadow-sm border-primary text-primary fw-bold" x-model="serverForm.module" @change="applyModuleDefaults()">
+                                        <option value="whm">WHM / cPanel</option>
+                                        <option value="plesk">Plesk</option>
+                                        <option value="directadmin">DirectAdmin</option>
+                                        <option value="aapanel">AAPanel</option>
+                                        <option value="none">Nenhum (Manual)</option>
+                                    </select>
+                                </div>
+                                <div class="col-12" x-show="moduleHelpText()">
+                                    <div class="alert alert-info py-2 small mb-0 shadow-sm border-0 bg-primary bg-opacity-10 text-primary">
+                                        <i class="bi bi-lightbulb-fill me-1"></i> <span x-text="moduleHelpText()"></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Usuário <span x-show="requiresUsername()">*</span></label>
+                                    <input type="text" class="form-control shadow-sm" x-model="serverForm.username" :required="requiresUsername()">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">API Key / Token <span x-show="requiresApiKey()">*</span></label>
+                                    <input type="password" class="form-control shadow-sm" x-model="serverForm.api_key" 
+                                           :placeholder="editingId ? '******** (Salvo)' : 'Cole o token aqui'">
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Seção 3: Capacidade e DNS -->
-                        <div class="row g-3">
-                            <div class="col-12"><h6 class="fw-bold border-bottom pb-2 text-primary text-uppercase small ls-1"><i class="bi bi-gear me-1"></i> Capacidade e DNS</h6></div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Max. contas</label>
-                                <input type="number" class="form-control" x-model="serverForm.max_accounts" min="0">
-                                <div class="text-muted" style="font-size: .7rem">0 = Sem limite</div>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold text-nowrap">Capacitado em (DC)</label>
-                                <input type="text" class="form-control" x-model="serverForm.dc_name" placeholder="Ex: OVH, AWS, Google">
-                                <div class="text-muted" style="font-size: .7rem">Nome do Datacenter</div>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Localização</label>
-                                <input type="text" class="form-control" x-model="serverForm.location" placeholder="Ex: Brasil">
-                            </div>
-                            
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Nameserver 1</label>
-                                <input type="text" class="form-control" x-model="serverForm.nameserver1" placeholder="ns1.seusite.com">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Nameserver 2</label>
-                                <input type="text" class="form-control" x-model="serverForm.nameserver2" placeholder="ns2.seusite.com">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Nameserver 3</label>
-                                <input type="text" class="form-control" x-model="serverForm.nameserver3" placeholder="Opcional">
-                            </div>
-
-                            <div class="col-12 border-top pt-3 mt-3">
-                                <div class="row align-items-center bg-light p-2 rounded-3 mx-0 border">
-                                    <div class="col-md-6 border-end">
-                                        <div class="form-check form-switch m-0 pt-1">
-                                            <input class="form-check-input" type="checkbox" x-model="serverForm.active" id="swActive">
-                                            <label class="form-check-label fw-bold" for="swActive" style="cursor: pointer">Servidor Ativo</label>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="form-check form-switch m-0 pt-1">
-                                            <input class="form-check-input" type="checkbox" x-model="serverForm.secure" id="swSecure">
-                                            <label class="form-check-label fw-bold" for="swSecure" style="cursor: pointer">Usar HTTPS/SSL</label>
-                                        </div>
+                        <!-- Passo 3: Capacidade e DNS -->
+                        <div x-show="step === 3" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-x-4" style="display:none">
+                            <div class="row g-3">
+                                <div class="col-12"><h6 class="fw-bold border-bottom pb-2 text-primary small ls-1 text-uppercase"><i class="bi bi-gear me-1"></i> 3. Configurações Finais</h6></div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Datacenter (DC)</label>
+                                    <input type="text" class="form-control shadow-sm" x-model="serverForm.dc_name" placeholder="Ex: OVH">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold">Localização</label>
+                                    <input type="text" class="form-control shadow-sm" x-model="serverForm.location" placeholder="Ex: Canadá">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Nameserver 1</label>
+                                    <input type="text" class="form-control shadow-sm" x-model="serverForm.nameserver1">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Nameserver 2</label>
+                                    <input type="text" class="form-control shadow-sm" x-model="serverForm.nameserver2">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold small">Status</label>
+                                    <div class="form-check form-switch pt-1">
+                                        <input class="form-check-input" type="checkbox" x-model="serverForm.active" id="swActiveWizard">
+                                        <label class="form-check-label fw-bold" for="swActiveWizard">Ativo</label>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer bg-light">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-primary px-5 shadow" :disabled="saving">
-                            <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
-                            <span x-text="editingId ? 'Salvar Alterações' : 'Cadastrar Servidor'"></span>
-                        </button>
+                    <div class="modal-footer bg-light border-0">
+                        <div class="d-flex justify-content-between w-100">
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary px-4 me-2" data-bs-dismiss="modal" x-show="step === 1">Fechar</button>
+                                <button type="button" class="btn btn-outline-secondary px-4 me-2" @click="step--" x-show="step > 1">Voltar</button>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-primary px-5 shadow-hp shadow-sm" @click="step++" x-show="step < 3">Próximo <i class="bi bi-arrow-right ms-1"></i></button>
+                                <button type="submit" class="btn btn-primary px-5 shadow-hp shadow-sm" x-show="step === 3" :disabled="saving">
+                                    <span x-show="saving" class="spinner-border spinner-border-sm me-1"></span>
+                                    <span x-text="editingId ? 'Salvar Alterações' : 'Cadastrar Servidor'"></span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -276,6 +279,7 @@ function serversTable() {
         servers: [],
         loading: true,
         saving: false,
+        step: 1,
         editingId: null,
         serverForm: {},
         moduleCatalog: @js(\App\Services\ServerModules\ServerModuleManager::catalog()),
@@ -451,11 +455,13 @@ function serversTable() {
         },
 
         openCreate() {
+            this.step = 1;
             this.resetForm();
             this.modal().show();
         },
 
         openEdit(server) {
+            this.step = 1;
             this.editingId = server.id;
             this.serverForm = {
                 name: server.name || '',
@@ -472,7 +478,7 @@ function serversTable() {
                 nameserver1: server.nameserver1 || '',
                 nameserver2: server.nameserver2 || '',
                 nameserver3: server.nameserver3 || '',
-                datacenter: server.datacenter || '',
+                dc_name: server.datacenter || '',
                 location: server.location || '',
                 active: !!server.active,
                 secure: !!server.secure,

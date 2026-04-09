@@ -92,10 +92,10 @@
                     </div>
 
                     {{-- Latência --}}
-                    <div class="text-center" style="min-width:90px">
+                    <div class="text-center" style="min-width:90px" data-metric="latency">
                         <div class="text-muted" style="font-size:.7rem">LATÊNCIA</div>
                         <div class="fw-bold" style="color:{{ $latColor }}">
-                            {{ $srv['latency_ms'] ? $srv['latency_ms'] . ' ms' : '—' }}
+                            {{ $srv['latency_ms'] !== null ? $srv['latency_ms'] . ' ms' : '—' }}
                         </div>
                         <div class="latency-bar mt-1">
                             <div class="latency-bar-fill" style="width:{{ $latPct }}%;background:{{ $latColor }}"></div>
@@ -103,40 +103,46 @@
                     </div>
 
                     {{-- Packet Loss --}}
-                    <div class="text-center" style="min-width:80px">
+                    <div class="text-center" style="min-width:80px" data-metric="packet_loss">
                         <div class="text-muted" style="font-size:.7rem">PACKET LOSS</div>
                         <div class="fw-bold {{ ($srv['packet_loss'] ?? 0) > 10 ? 'text-danger' : 'text-muted' }}">
                             {{ $srv['packet_loss'] !== null ? number_format($srv['packet_loss'], 1) . '%' : '—' }}
                         </div>
                     </div>
 
-                    {{-- CPU/RAM (compacto) --}}
-                    <div class="text-center d-none d-md-block" style="min-width:70px">
-                        <div class="text-muted" style="font-size:.7rem">CPU / RAM</div>
+                    {{-- CPU / Disco --}}
+                    <div class="text-center d-none d-md-block" style="min-width:90px" data-metric="cpu_disk">
+                        <div class="text-muted" style="font-size:.7rem">CPU / DISCO</div>
                         <div class="fw-semibold small">
                             {{ $srv['cpu'] !== null ? round($srv['cpu']) . '%' : '—' }}
                             /
-                            {{ $srv['ram'] !== null ? round($srv['ram']) . '%' : '—' }}
+                            {{ $srv['disk'] !== null ? round($srv['disk']) . '%' : '—' }}
                         </div>
+                    </div>
+
+                    {{-- Contas --}}
+                    <div class="text-center d-none d-lg-block" style="min-width:60px" data-metric="accounts">
+                        <div class="text-muted" style="font-size:.7rem">CONTAS</div>
+                        <div class="fw-semibold small">{{ $srv['account_count'] ?? '—' }}</div>
                     </div>
 
                     {{-- Status Badge --}}
                     <span class="badge bg-{{ $sc }} bg-opacity-{{ $srv['status'] === 'online' ? '100' : '75' }} rounded-pill"
-                          style="font-size:.75rem">
+                          style="font-size:.75rem" data-metric="badge">
                         {{ ['online' => 'Operacional', 'degraded' => 'Degradado', 'offline' => 'Offline', 'unknown' => 'Desconhecido'][$srv['status']] ?? ucfirst($srv['status']) }}
                     </span>
                 </div>
 
-                @if($srv['uptime'] || $srv['checked_at'])
-                <div class="text-muted mt-2 d-flex gap-3 flex-wrap" style="font-size:.72rem">
+                <div class="text-muted mt-2 d-flex gap-3 flex-wrap" style="font-size:.72rem" data-metric="footer">
                     @if($srv['uptime'])
                     <span><i class="bi bi-clock me-1"></i>Uptime: {{ $srv['uptime'] }}</span>
+                    @elseif($srv['cpanel_version'])
+                    <span><i class="bi bi-cpu me-1"></i>cPanel {{ $srv['cpanel_version'] }}</span>
                     @endif
                     @if($srv['checked_at'])
                     <span><i class="bi bi-arrow-repeat me-1"></i>Verificado {{ $srv['checked_at'] }}</span>
                     @endif
                 </div>
-                @endif
             </div>
         </div>
         @endforeach
@@ -161,10 +167,102 @@
 </div>
 
 <script>
-// Auto-refresh a cada 30s
+// Auto-refresh a cada 30s — atualiza TODOS os dados
 let cd = 30;
 const cdEl = document.getElementById('cdSecs');
 const luEl = document.getElementById('lastUpdated');
+
+const statusLabels = { online: 'Operacional', degraded: 'Degradado', offline: 'Offline', unknown: 'Desconhecido' };
+const statusColors = { online: 'success', degraded: 'warning', offline: 'danger', unknown: 'secondary' };
+
+function latencyColor(ms) {
+    if (ms === null || ms === undefined) return '#94a3b8';
+    return ms > 500 ? '#ef4444' : (ms > 200 ? '#f59e0b' : '#22c55e');
+}
+
+function metricText(val, suffix) {
+    return val !== null && val !== undefined ? Math.round(val) + suffix : '—';
+}
+
+function updateCard(card, srv) {
+    // Status dot
+    const dot = card.querySelector('.status-dot');
+    if (dot) dot.className = 'status-dot ' + srv.status;
+
+    // Latência
+    const latEl = card.querySelector('[data-metric="latency"]');
+    if (latEl) {
+        const lc = latencyColor(srv.latency_ms);
+        latEl.querySelector('.fw-bold').textContent = srv.latency_ms !== null ? srv.latency_ms + ' ms' : '—';
+        latEl.querySelector('.fw-bold').style.color = lc;
+        const bar = latEl.querySelector('.latency-bar-fill');
+        if (bar) {
+            bar.style.width = (srv.latency_ms ? Math.min(100, (srv.latency_ms / 1000) * 100) : 0) + '%';
+            bar.style.background = lc;
+        }
+    }
+
+    // Packet Loss
+    const plEl = card.querySelector('[data-metric="packet_loss"]');
+    if (plEl) {
+        const val = srv.packet_loss !== null && srv.packet_loss !== undefined ? Number(srv.packet_loss).toFixed(1) + '%' : '—';
+        plEl.querySelector('.fw-bold').textContent = val;
+        plEl.querySelector('.fw-bold').className = 'fw-bold ' + ((srv.packet_loss || 0) > 10 ? 'text-danger' : 'text-muted');
+    }
+
+    // CPU / Disco
+    const cdEl2 = card.querySelector('[data-metric="cpu_disk"]');
+    if (cdEl2) {
+        cdEl2.querySelector('.fw-semibold').textContent = metricText(srv.cpu, '%') + ' / ' + metricText(srv.disk, '%');
+    }
+
+    // Contas
+    const accEl = card.querySelector('[data-metric="accounts"]');
+    if (accEl) {
+        accEl.querySelector('.fw-semibold').textContent = srv.account_count ?? '—';
+    }
+
+    // Badge
+    const badge = card.querySelector('[data-metric="badge"]');
+    if (badge) {
+        badge.textContent = statusLabels[srv.status] || srv.status;
+        badge.className = 'badge bg-' + (statusColors[srv.status] || 'secondary') + ' rounded-pill';
+        badge.style.fontSize = '.75rem';
+    }
+
+    // Footer (uptime / cPanel / checked_at)
+    const footer = card.querySelector('[data-metric="footer"]');
+    if (footer) {
+        let parts = [];
+        if (srv.uptime) {
+            parts.push('<span><i class="bi bi-clock me-1"></i>Uptime: ' + srv.uptime + '</span>');
+        } else if (srv.cpanel_version) {
+            parts.push('<span><i class="bi bi-cpu me-1"></i>cPanel ' + srv.cpanel_version + '</span>');
+        }
+        if (srv.checked_at) {
+            parts.push('<span><i class="bi bi-arrow-repeat me-1"></i>Verificado ' + srv.checked_at + '</span>');
+        }
+        footer.innerHTML = parts.join('');
+    }
+}
+
+// Banner overall
+function updateBanner(overall) {
+    const banner = document.querySelector('.hero-banner');
+    if (!banner) return;
+    const map = {
+        operational: { cls: 'operational', icon: 'bi-check-circle-fill', title: 'Todos os sistemas operacionais', sub: 'Toda a infraestrutura está funcionando normalmente.' },
+        degraded: { cls: 'degraded', icon: 'bi-exclamation-circle-fill', title: 'Desempenho degradado', sub: 'Alguns servidores estão com latência elevada ou perda de pacotes.' },
+        partial_outage: { cls: 'partial_outage', icon: 'bi-exclamation-triangle-fill', title: 'Interrupção parcial', sub: 'Um ou mais servidores estão offline.' },
+        outage: { cls: 'outage', icon: 'bi-x-circle-fill', title: 'Interrupção total', sub: 'Todos os servidores estão offline.' },
+        unknown: { cls: 'unknown', icon: 'bi-question-circle-fill', title: 'Status desconhecido', sub: 'Aguardando dados do monitoramento.' }
+    };
+    const h = map[overall] || map.unknown;
+    banner.className = 'hero-banner ' + h.cls + ' mb-5 d-flex align-items-center gap-4';
+    banner.querySelector('i').className = 'bi ' + h.icon + ' fs-1 opacity-90';
+    banner.querySelector('.fs-4').textContent = h.title;
+    banner.querySelector('.opacity-80').textContent = h.sub;
+}
 
 setInterval(() => {
     cd--;
@@ -175,11 +273,10 @@ setInterval(() => {
             .then(r => r.json())
             .then(data => {
                 if (luEl) luEl.textContent = 'Atualizado agora';
+                updateBanner(data.overall);
                 data.servers.forEach(srv => {
                     const card = document.querySelector('[data-server-id="' + srv.id + '"]');
-                    if (!card) return;
-                    const dot = card.querySelector('.status-dot');
-                    if (dot) { dot.className = 'status-dot ' + srv.status; }
+                    if (card) updateCard(card, srv);
                 });
             })
             .catch(() => {});

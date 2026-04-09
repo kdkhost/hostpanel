@@ -354,8 +354,8 @@ class HomeController extends Controller
                 $validated['payment_method']
             );
 
-            // Limpar carrinho
-            session()->forget('cart_items');
+            // Limpar carrinho do banco de dados (persistente)
+            app(\App\Services\CartService::class)->clearCart();
 
             return redirect()->route('client.orders.show', $order->id)
                 ->with('success', 'Pedido realizado com sucesso!');
@@ -363,5 +363,62 @@ class HomeController extends Controller
         } catch (\Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()])->withInput();
         }
+    }
+
+    /**
+     * API: Obter itens do carrinho
+     */
+    public function apiCartGet(\App\Services\CartService $cartService)
+    {
+        return response()->json([
+            'items' => $cartService->getItems(),
+            'count' => $cartService->getCount(),
+        ]);
+    }
+
+    /**
+     * API: Sincronizar carrinho do localStorage
+     */
+    public function apiCartSync(Request $request, \App\Services\CartService $cartService)
+    {
+        $request->validate([
+            'items' => 'required|array',
+            'items.*.product_id' => 'required|integer|exists:products,id',
+            'items.*.billing_cycle' => 'required|string',
+            'items.*.domain' => 'nullable|string',
+        ]);
+
+        $items = $cartService->syncFromLocalStorage($request->items);
+
+        return response()->json([
+            'items' => $items,
+            'count' => count($items),
+        ]);
+    }
+
+    /**
+     * API: Remover item do carrinho
+     */
+    public function apiCartRemove(int $item, \App\Services\CartService $cartService)
+    {
+        $success = $cartService->removeItem($item);
+
+        return response()->json([
+            'success' => $success,
+            'count' => $cartService->getCount(),
+        ]);
+    }
+
+    /**
+     * API: Limpar carrinho
+     */
+    public function apiCartClear(\App\Services\CartService $cartService)
+    {
+        $cartService->clearCart();
+
+        return response()->json([
+            'success' => true,
+            'count' => 0,
+        ]);
     }
 }

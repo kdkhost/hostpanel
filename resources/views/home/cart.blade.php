@@ -34,7 +34,7 @@
 </div>
 
 {{-- Conteúdo do Carrinho --}}
-<div class="max-w-5xl mx-auto px-4 py-8" x-data="cartPage()">
+<div class="max-w-5xl mx-auto px-4 py-8" x-data="cartPage()" x-init="loadCart()">
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {{-- Itens --}}
         <div class="lg:col-span-2 space-y-4" id="cart-items">
@@ -108,33 +108,107 @@
 <script>
 function cartPage() {
     return {
-        items: JSON.parse(localStorage.getItem('hostpanel_cart') || '[]'),
+        items: [],
+        loading: true,
+
         get subtotal() {
             return this.items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
         },
+
         formatPrice(v) {
             return parseFloat(v).toFixed(2).replace('.', ',');
         },
-        removeItem(index) {
-            this.items.splice(index, 1);
-            localStorage.setItem('hostpanel_cart', JSON.stringify(this.items));
-            this.updateBadge();
+
+        // Carregar carrinho da API (persistente)
+        async loadCart() {
+            this.loading = true;
+
+            // Primeiro sincroniza localStorage com API (para itens antigos)
+            const localCart = JSON.parse(localStorage.getItem('hostpanel_cart') || '[]');
+
+            // Verificar expiração (24h) no frontend também
+            const now = new Date();
+            const validItems = localCart.filter(item => {
+                const addedAt = new Date(item.added_at || item.created_at || now);
+                const hoursDiff = (now - addedAt) / (1000 * 60 * 60);
+                return hoursDiff < 24;
+            });
+
+            // Se houver itens válidos no localStorage, sincroniza com API
+            if (validItems.length > 0) {
+                try {
+                    await fetch('{{ route("cart.api.sync") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ items: validItems })
+                    });
+                    // Limpa localStorage após sincronização
+                    localStorage.removeItem('hostpanel_cart');
+                } catch (e) {
+                    console.error('Erro ao sincronizar carrinho:', e);
+                }
+            }
+
+            // Carregar itens da API
+            try {
+                const response = await fetch('{{ route("cart.api.get") }}');
+                const data = await response.json();
+                this.items = data.items || [];
+                this.updateBadge(data.count || 0);
+            } catch (e) {
+                console.error('Erro ao carregar carrinho:', e);
+            } finally {
+                this.loading = false;
+            }
         },
-        updateBadge() {
+
+        // Remover item via API
+        async removeItem(index) {
+            const item = this.items[index];
+            if (!item) return;
+
+            try {
+                await fetch(`{{ route("cart.api.remove", "__ID__") }}`.replace('__ID__', item.id), {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+                this.items.splice(index, 1);
+                this.updateBadge(this.items.length);
+            } catch (e) {
+                console.error('Erro ao remover item:', e);
+            }
+        },
+
+        updateBadge(count) {
             const badge = document.getElementById('cart-badge');
             if (badge) {
-                if (this.items.length > 0) {
-                    badge.textContent = this.items.length;
+                if (count > 0) {
+                    badge.textContent = count;
                     badge.classList.remove('hidden');
                 } else {
                     badge.classList.add('hidden');
                 }
             }
         },
+
         checkout() {
             if (this.items.length === 0) return;
-            // Envia itens do carrinho para o checkout público (estilo WHMCS)
-            const itemsParam = encodeURIComponent(JSON.stringify(this.items));
+            // Converte itens da API para formato do checkout
+            const checkoutItems = this.items.map(item => ({
+                product_id: item.product_id,
+                cycle: item.billing_cycle,
+                domain: item.domain || '',
+                product_name: item.product_name,
+                cycle_label: item.cycle_label,
+                price: item.price,
+                total: item.total
+            }));
+            const itemsParam = encodeURIComponent(JSON.stringify(checkoutItems));
             window.location = '{{ route("checkout") }}?items=' + itemsParam;
         }
     }

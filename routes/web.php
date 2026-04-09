@@ -95,6 +95,16 @@ Route::get('/api/dominio/verificar', [\App\Http\Controllers\HomeController::clas
 
 /*
 |--------------------------------------------------------------------------
+| Carrinho API (persistente 24h)
+|--------------------------------------------------------------------------
+*/
+Route::get('/api/cart', [\App\Http\Controllers\HomeController::class, 'apiCartGet'])->name('cart.api.get');
+Route::post('/api/cart/sync', [\App\Http\Controllers\HomeController::class, 'apiCartSync'])->name('cart.api.sync');
+Route::delete('/api/cart/{item}', [\App\Http\Controllers\HomeController::class, 'apiCartRemove'])->name('cart.api.remove');
+Route::post('/api/cart/clear', [\App\Http\Controllers\HomeController::class, 'apiCartClear'])->name('cart.api.clear');
+
+/*
+|--------------------------------------------------------------------------
 | Autenticação de Clientes
 |--------------------------------------------------------------------------
 */

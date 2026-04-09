@@ -304,9 +304,11 @@ function orderProduct(productId, defaultCycle, prices) {
             const cart = JSON.parse(localStorage.getItem('hostpanel_cart') || '[]');
             const item = {
                 id: Date.now(),
+                added_at: new Date().toISOString(), // Timestamp para expiração 24h
                 product_id:    this.productId,
                 product_name:  '{{ addslashes($product->name) }}',
                 product_slug:  '{{ $product->slug }}',
+                billing_cycle: this.cycle, // Renomeado para compatibilidade com API
                 cycle:         this.cycle,
                 cycle_label:   this.cycleLabel,
                 price:         this.cyclePrice,
@@ -314,6 +316,7 @@ function orderProduct(productId, defaultCycle, prices) {
                 total:         this.total,
                 domain:        this.domainName ? (this.domainOption === 'new' ? this.domainName + '.' + this.domainTld : this.domainName) : '',
                 domain_option: this.domainOption,
+                coupon_code:   this.couponValid ? this.couponCode : '', // Renomeado para compatibilidade
                 coupon:        this.couponValid ? this.couponCode : '',
                 discount:      this.discount,
             };

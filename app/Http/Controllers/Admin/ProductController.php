@@ -9,6 +9,7 @@ use App\Models\ProductPricing;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 class ProductController extends Controller
 {
@@ -221,9 +222,13 @@ class ProductController extends Controller
         return response()->json(['message' => 'Produto excluido com sucesso!']);
     }
 
-    public function groups(): JsonResponse
+    public function groups(Request $request): JsonResponse|View
     {
-        return response()->json(ProductGroup::withCount('products')->orderBy('sort_order')->get());
+        if ($request->expectsJson()) {
+            return response()->json(ProductGroup::withCount('products')->orderBy('sort_order')->get());
+        }
+
+        return view('admin.products.groups');
     }
 
     public function storeGroup(Request $request): JsonResponse

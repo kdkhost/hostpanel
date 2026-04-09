@@ -44,20 +44,20 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::post('tickets/{ticket}/reply', [V1\TicketController::class, 'reply']);
         Route::post('tickets/{ticket}/close', [V1\TicketController::class, 'close']);
 
-        // Servidores
-        Route::apiResource('servers', V1\ServerController::class)->only(['index','show']);
-        Route::get('servers/{server}/health', [V1\ServerController::class, 'health']);
+        // Servidores (Desativado: Controller inexistente)
+        // Route::apiResource('servers', V1\ServerController::class)->only(['index','show']);
+        // Route::get('servers/{server}/health', [V1\ServerController::class, 'health']);
 
-        // Notificações
-        Route::get('notifications',            [V1\NotificationController::class, 'index']);
-        Route::post('notifications/{id}/read', [V1\NotificationController::class, 'markRead']);
+        // Notificações (Desativado: Controller inexistente)
+        // Route::get('notifications',            [V1\NotificationController::class, 'index']);
+        // Route::post('notifications/{id}/read', [V1\NotificationController::class, 'markRead']);
 
-        // Domínios
-        Route::apiResource('domains', V1\DomainController::class)->only(['index','show']);
+        // Domínios (Desativado: Controller inexistente)
+        // Route::apiResource('domains', V1\DomainController::class)->only(['index','show']);
 
-        // Produtos (público via token)
-        Route::get('products',      [V1\ProductController::class, 'index']);
-        Route::get('products/{id}', [V1\ProductController::class, 'show']);
+        // Produtos (Desativado: Controller inexistente)
+        // Route::get('products',      [V1\ProductController::class, 'index']);
+        // Route::get('products/{id}', [V1\ProductController::class, 'show']);
 
         // Webhooks
         Route::get('webhooks',  [V1\WebhookController::class, 'index']);

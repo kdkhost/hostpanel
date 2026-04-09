@@ -4,8 +4,13 @@
 @section('meta-description', $settings['meta_description'] ?? 'Hospedagem de sites profissional com suporte 24h.')
 
 @push('head')
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 <style>
     .hero-bg { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #1a56db 100%); }
+    .carousel-track { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+    .carousel-item { scroll-snap-align: start; }
+    .carousel-track::-webkit-scrollbar { display: none; }
+    .carousel-track { -ms-overflow-style: none; scrollbar-width: none; }
 </style>
 @endpush
 
@@ -45,61 +50,156 @@
     </div>
 </section>
 
-{{-- Planos --}}
-<section id="plans" class="py-24 bg-gray-50">
+{{-- Destaques em Carrossel --}}
+@php
+$destaques = collect();
+$categorias = ['hospedagem', 'revenda', 'vps', 'servidor', 'cloud', 'streaming'];
+
+if (isset($groups) && $groups->count()) {
+    foreach ($groups as $group) {
+        $catKey = strtolower($group->name);
+        $foundCat = null;
+        foreach ($categorias as $cat) {
+            if (str_contains($catKey, $cat)) {
+                $foundCat = $cat;
+                break;
+            }
+        }
+
+        if ($foundCat && !$destaques->has($foundCat)) {
+            $produto = $group->products->first(function($p) {
+                return $p->featured || $p->prices['monthly'] ?? null;
+            }) ?? $group->products->first();
+
+            if ($produto) {
+                $destaques->put($foundCat, [
+                    'categoria' => $group->name,
+                    'slug' => $group->slug,
+                    'produto' => $produto,
+                    'tipo' => $foundCat,
+                    'icone' => match($foundCat) {
+                        'hospedagem' => 'bi-hdd-stack',
+                        'revenda' => 'bi-shop',
+                        'vps' => 'bi-server',
+                        'servidor' => 'bi-pc-display',
+                        'cloud' => 'bi-cloud',
+                        'streaming' => 'bi-broadcast',
+                        default => 'bi-box-seam'
+                    }
+                ]);
+            }
+        }
+    }
+}
+
+if ($destaques->count() < 6 && isset($announcements) && $announcements->count()) {
+    $anuncio = $announcements->first();
+    $destaques->put('anuncio', [
+        'categoria' => 'Novidade',
+        'slug' => null,
+        'anuncio' => $anuncio,
+        'tipo' => 'anuncio',
+        'icone' => 'bi-megaphone'
+    ]);
+}
+
+$destaques = $destaques->take(6);
+@endphp
+
+@if($destaques->count())
+<section id="destaques" class="py-16 bg-gray-50" x-data="{ scroll: 0, maxScroll: 0, updateScroll() {
+    const el = this.$refs.track;
+    this.scroll = el.scrollLeft;
+    this.maxScroll = el.scrollWidth - el.clientWidth;
+} }" x-init="$nextTick(() => updateScroll())">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-14">
-            <h2 class="text-4xl font-extrabold text-gray-900">Planos de Hospedagem</h2>
-            <p class="text-gray-500 mt-3 text-lg">Escolha o plano ideal para o seu projeto</p>
+        <div class="flex items-center justify-between mb-8">
+            <div>
+                <h2 class="text-2xl font-extrabold text-gray-900">Destaques</h2>
+                <p class="text-gray-500 text-sm mt-1">Soluções selecionadas para você</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button @click="$refs.track.scrollBy({ left: -280, behavior: 'smooth' }); setTimeout(() => updateScroll(), 300)"
+                        class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition disabled:opacity-30"
+                        :disabled="scroll <= 10">
+                    <i class="bi bi-chevron-left"></i>
+                </button>
+                <button @click="$refs.track.scrollBy({ left: 280, behavior: 'smooth' }); setTimeout(() => updateScroll(), 300)"
+                        class="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-50 transition disabled:opacity-30"
+                        :disabled="scroll >= maxScroll - 10">
+                    <i class="bi bi-chevron-right"></i>
+                </button>
+            </div>
         </div>
 
-        @forelse($groups ?? [] as $group)
-        <div class="mb-16">
-            <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">{{ $group->name }}</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                @foreach($group->products as $product)
-                @php $price = $product->prices['monthly'] ?? null; @endphp
-                <div class="bg-white rounded-2xl border {{ $product->featured ? 'border-blue-400 shadow-2xl ring-2 ring-blue-200' : 'border-gray-100 shadow-sm' }} overflow-hidden card-hover flex flex-col relative">
-                    @if($product->featured)
-                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white text-center py-2 text-xs font-bold tracking-widest uppercase">⭐ Mais Popular</div>
-                    @endif
-                    <div class="p-7 flex-1">
-                        <h4 class="font-bold text-xl text-gray-900 mb-1">{{ $product->name }}</h4>
-                        @if($product->tagline) <p class="text-gray-500 text-sm mb-4">{{ $product->tagline }}</p> @endif
-                        <div class="mb-6">
-                            @if($price !== null)
-                            <div class="flex items-baseline gap-1">
-                                <span class="text-4xl font-extrabold text-gray-900">R$ {{ number_format($price, 2, ',', '.') }}</span>
-                                <span class="text-gray-400 text-sm">/mês</span>
-                            </div>
-                            @else
-                            <div class="text-2xl font-bold text-gray-400">Consulte</div>
-                            @endif
+        {{-- Carrossel --}}
+        <div x-ref="track" @scroll.throttle="updateScroll()"
+             class="carousel-track flex gap-4 overflow-x-auto pb-4">
+            @foreach($destaques as $tipo => $item)
+            <div class="carousel-item flex-shrink-0 w-[260px]">
+                @if($tipo === 'anuncio' && isset($item['anuncio']))
+                {{-- Card de Anúncio --}}
+                <div class="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl p-5 text-white h-full flex flex-col">
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                            <i class="bi {{ $item['icone'] }} text-white"></i>
                         </div>
-                        @if($product->features)
-                        <ul class="space-y-2.5">
-                            @foreach($product->features as $f)
-                            <li class="flex items-start gap-2 text-sm text-gray-700">
-                                <i class="bi bi-check-circle-fill text-green-500 flex-shrink-0 mt-0.5"></i> {{ $f }}
-                            </li>
-                            @endforeach
-                        </ul>
-                        @endif
+                        <span class="text-xs font-semibold bg-white/20 px-2 py-1 rounded">{{ $item['categoria'] }}</span>
                     </div>
-                    <div class="p-7 pt-0">
-                        <a href="{{ route('client.orders.catalog') }}" class="block w-full text-center {{ $product->featured ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white' : 'border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white' }} font-bold py-3.5 rounded-xl transition">
-                            Contratar Agora
+                    <h3 class="font-bold text-lg mb-2">{{ Str::limit($item['anuncio']->title, 40) }}</h3>
+                    <p class="text-blue-100 text-sm mb-4 flex-1">{{ Str::limit(strip_tags($item['anuncio']->content), 80) }}</p>
+                    <a href="{{ route('announcements') }}" class="text-sm font-semibold bg-white text-blue-600 px-4 py-2 rounded-lg text-center hover:bg-blue-50 transition">
+                        Saiba mais
+                    </a>
+                </div>
+                @else
+                {{-- Card de Produto --}}
+                @php $produto = $item['produto']; $preco = $produto->prices['monthly'] ?? $produto->pricing->first()?->price ?? null; @endphp
+                <div class="bg-white rounded-xl border {{ $produto->featured ? 'border-blue-400 ring-2 ring-blue-100' : 'border-gray-100' }} shadow-sm p-5 h-full flex flex-col relative hover:shadow-md transition">
+                    @if($produto->featured)
+                    <div class="absolute -top-2 left-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">⭐ Destaque</div>
+                    @endif
+                    <div class="flex items-center gap-2 mb-3">
+                        <div class="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <i class="bi {{ $item['icone'] }} text-blue-600"></i>
+                        </div>
+                        <span class="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded">{{ $item['categoria'] }}</span>
+                    </div>
+                    <h3 class="font-bold text-gray-900 mb-1">{{ Str::limit($produto->name, 35) }}</h3>
+                    @if($produto->tagline)
+                    <p class="text-gray-500 text-xs mb-3 line-clamp-2">{{ $produto->tagline }}</p>
+                    @else
+                    <p class="text-gray-400 text-xs mb-3">{{ Str::limit($produto->description ?? 'Serviço profissional', 50) }}</p>
+                    @endif
+                    <div class="mt-auto pt-3 border-t border-gray-100">
+                        @if($preco)
+                        <div class="flex items-baseline gap-1 mb-3">
+                            <span class="text-2xl font-extrabold text-gray-900">R$ {{ number_format($preco, 2, ',', '.') }}</span>
+                            <span class="text-gray-400 text-xs">/mês</span>
+                        </div>
+                        @else
+                        <div class="text-gray-500 text-sm font-semibold mb-3">Consulte</div>
+                        @endif
+                        <a href="{{ route('client.orders.catalog') }}?produto={{ $produto->id }}" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm py-2.5 rounded-lg transition">
+                            Contratar
                         </a>
                     </div>
                 </div>
-                @endforeach
+                @endif
             </div>
+            @endforeach
         </div>
-        @empty
-        <p class="text-center text-gray-400">Planos em breve.</p>
-        @endforelse
+
+        {{-- Dots --}}
+        <div class="flex justify-center gap-2 mt-4">
+            @foreach($destaques as $i => $item)
+            <div class="w-2 h-2 rounded-full transition-all duration-300"
+                 :class="Math.round(scroll / 270) === {{ $loop->index }} ? 'bg-blue-600 w-4' : 'bg-gray-300'"></div>
+            @endforeach
+        </div>
     </div>
 </section>
+@endif
 
 {{-- Features --}}
 <section id="features" class="py-24 bg-white">

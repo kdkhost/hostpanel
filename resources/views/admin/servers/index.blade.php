@@ -58,19 +58,25 @@
                         </div>
 
                         <div class="row g-2 mb-3 text-center">
-                            <div class="col-4">
+                            <div class="col-3">
                                 <div class="bg-light rounded p-2">
-                                    <div class="fw-bold" x-text="server.services_count ?? 0"></div>
+                                    <div class="fw-bold" x-text="server.latest_health_log?.account_count ?? server.current_accounts ?? 0"></div>
                                     <div class="text-muted" style="font-size:.7rem">Contas</div>
                                 </div>
                             </div>
-                            <div class="col-4">
+                            <div class="col-3">
                                 <div class="bg-light rounded p-2">
                                     <div class="fw-bold" x-text="metricLabel(server.latest_health_log?.cpu_usage, '%')"></div>
                                     <div class="text-muted" style="font-size:.7rem">CPU</div>
                                 </div>
                             </div>
-                            <div class="col-4">
+                            <div class="col-3">
+                                <div class="bg-light rounded p-2">
+                                    <div class="fw-bold" x-text="metricLabel(server.latest_health_log?.disk_usage, '%')"></div>
+                                    <div class="text-muted" style="font-size:.7rem">Disco</div>
+                                </div>
+                            </div>
+                            <div class="col-3">
                                 <div class="bg-light rounded p-2">
                                     <div class="fw-bold" x-text="metricLabel(server.latest_health_log?.ram_usage, '%')"></div>
                                     <div class="text-muted" style="font-size:.7rem">RAM</div>
@@ -359,16 +365,20 @@ function serversTable() {
             return value == null ? '-' : `${Number(value).toFixed(0)}${suffix}`;
         },
 
+        accountCount(server) {
+            return server.latest_health_log?.account_count ?? server.current_accounts ?? 0;
+        },
+
         capacityPercent(server) {
             if (!server.max_accounts) {
                 return 0;
             }
 
-            return Math.min(((server.services_count || 0) / server.max_accounts) * 100, 100);
+            return Math.min((this.accountCount(server) / server.max_accounts) * 100, 100);
         },
 
         capacityLabel(server) {
-            return `${server.services_count || 0} / ${server.max_accounts || 'sem limite'}`;
+            return `${this.accountCount(server)} / ${server.max_accounts || 'sem limite'}`;
         },
 
         lastCheckLabel(server) {

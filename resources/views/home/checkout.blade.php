@@ -180,7 +180,7 @@ $isLoggedIn = auth('client')->check();
                                            placeholder="••••••••">
                                 </div>
                                 <p class="text-sm text-gray-500">
-                                    <a href="{{ route('client.password.request') }}" class="text-blue-600 hover:underline">Esqueceu a senha?</a>
+                                    <a href="{{ route('client.password.forgot') }}" class="text-blue-600 hover:underline">Esqueceu a senha?</a>
                                 </p>
                             </div>
                         </div>

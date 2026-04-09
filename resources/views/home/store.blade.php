@@ -87,8 +87,11 @@
                     @endif
                 </div>
 
+                @php
+                $checkoutData = json_encode([['product_id' => $product->id, 'cycle' => $lowestPrice?->billing_cycle ?? 'monthly', 'domain' => '']]);
+                @endphp
                 <div class="px-6 pb-6">
-                    <a href="{{ route('order.product', $product->slug) }}"
+                    <a href="{{ route('checkout') }}?items={{ urlencode($checkoutData) }}"
                        class="block w-full text-center {{ $product->featured ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-50 hover:bg-blue-100 text-blue-700' }} font-bold py-3 rounded-xl text-sm transition">
                         Contratar agora →
                     </a>

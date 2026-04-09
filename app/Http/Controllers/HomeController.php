@@ -193,4 +193,153 @@ class HomeController extends Controller
 
         return back()->with('success', 'Mensagem enviada com sucesso! Entraremos em contato em breve.');
     }
+
+    /**
+     * Checkout público - Fluxo WHMCS style
+     * Aceita itens via query params ou session
+     */
+    public function checkout(Request $request)
+    {
+        // Itens podem vir por query param (ex: ?items=[{"product_id":1,...}]) ou session
+        $items = [];
+        if ($request->has('items')) {
+            $items = json_decode($request->query('items'), true) ?? [];
+        } elseif (session()->has('cart_items')) {
+            $items = session('cart_items', []);
+        }
+
+        // Validar e carregar produtos
+        $cartItems = [];
+        $total = 0;
+        $hasDomainRequirement = false;
+
+        foreach ($items as $item) {
+            $product = \App\Models\Product::where('id', $item['product_id'] ?? null)
+                ->where('active', true)
+                ->with(['pricing' => fn($q) => $q->where('billing_cycle', $item['cycle'] ?? 'monthly')])
+                ->first();
+
+            if (!$product) continue;
+
+            $pricing = $product->pricing->first();
+            $price = $pricing?->price ?? 0;
+            $setupFee = $pricing?->setup_fee ?? 0;
+            $itemTotal = $price + $setupFee;
+
+            // Verificar se produto exige domínio
+            $requiresDomain = $product->requires_domain ?? false;
+            if ($requiresDomain && empty($item['domain'])) {
+                $hasDomainRequirement = true;
+            }
+
+            $cartItems[] = [
+                'product' => $product,
+                'cycle' => $item['cycle'] ?? 'monthly',
+                'domain' => $item['domain'] ?? '',
+                'price' => $price,
+                'setup_fee' => $setupFee,
+                'total' => $itemTotal,
+                'requires_domain' => $requiresDomain,
+            ];
+
+            $total += $itemTotal;
+        }
+
+        // Gateways de pagamento ativos
+        $gateways = \App\Models\PaymentGateway::where('active', true)->get();
+
+        // Se cliente logado, pega dados
+        $client = auth('client')->user();
+
+        return view('home.checkout', compact('cartItems', 'total', 'gateways', 'client', 'hasDomainRequirement'));
+    }
+
+    /**
+     * Processar checkout público (criar conta + pedido ou só pedido)
+     */
+    public function checkoutSubmit(Request $request)
+    {
+        $isLoggedIn = auth('client')->check();
+
+        $rules = [
+            'items' => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.billing_cycle' => 'required|string',
+            'items.*.domain' => 'nullable|string|max:255',
+            'payment_method' => 'required|string',
+            'coupon_code' => 'nullable|string|max:50',
+        ];
+
+        // Se não logado, validar dados de criação de conta
+        if (!$isLoggedIn) {
+            $rules['account_type'] = 'required|in:existing,new';
+            $rules['email'] = 'required|email|max:100';
+            $rules['password'] = 'required_if:account_type,new|string|min:6|max:100';
+            $rules['first_name'] = 'required_if:account_type,new|string|max:50';
+            $rules['last_name'] = 'required_if:account_type,new|string|max:50';
+            $rules['phone'] = 'nullable|string|max:20';
+            $rules['country'] = 'nullable|string|max:2';
+        }
+
+        $validated = $request->validate($rules);
+
+        try {
+            $client = null;
+
+            // Lidar com autenticação/criação de conta
+            if (!$isLoggedIn) {
+                if ($validated['account_type'] === 'existing') {
+                    // Tentar login
+                    $credentials = ['email' => $validated['email'], 'password' => $request->password];
+                    if (!auth('client')->attempt($credentials)) {
+                        return back()->withErrors(['email' => 'Credenciais inválidas.'])->withInput();
+                    }
+                    $client = auth('client')->user();
+                } else {
+                    // Criar nova conta
+                    $existingClient = \App\Models\Client::where('email', $validated['email'])->first();
+                    if ($existingClient) {
+                        return back()->withErrors(['email' => 'Este email já está cadastrado. Faça login.'])->withInput();
+                    }
+
+                    $client = \App\Models\Client::create([
+                        'email' => $validated['email'],
+                        'password' => bcrypt($validated['password']),
+                        'first_name' => $validated['first_name'],
+                        'last_name' => $validated['last_name'],
+                        'phone' => $validated['phone'] ?? null,
+                        'country' => $validated['country'] ?? 'BR',
+                        'status' => 'active',
+                    ]);
+
+                    auth('client')->login($client);
+                }
+            } else {
+                $client = auth('client')->user();
+            }
+
+            // Criar pedido via OrderService
+            $mappedItems = collect($validated['items'])->map(fn($item) => [
+                'product_id' => $item['product_id'],
+                'billing_cycle' => $item['billing_cycle'],
+                'domain' => $item['domain'] ?? null,
+            ])->toArray();
+
+            $order = app(\App\Services\OrderService::class)->create(
+                $client,
+                $mappedItems,
+                $validated['coupon_code'] ?? null,
+                $validated['payment_method']
+            );
+
+            // Limpar carrinho
+            session()->forget('cart_items');
+
+            return redirect()->route('client.orders.show', $order->id)
+                ->with('success', 'Pedido realizado com sucesso!');
+
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => $e->getMessage()])->withInput();
+        }
+    }
 }

@@ -81,6 +81,10 @@ Route::get('/pedir/{slug}',      [\App\Http\Controllers\HomeController::class, '
 Route::get('/carrinho',          [\App\Http\Controllers\HomeController::class, 'cart'])->name('cart');
 Route::post('/carrinho/validar-cupom', [\App\Http\Controllers\Client\OrderController::class, 'validateCoupon'])->name('cart.coupon.validate')->withoutMiddleware(['auth.client']);
 
+// Checkout público estilo WHMCS (aceita visitantes e converte em cliente)
+Route::get('/checkout',           [\App\Http\Controllers\HomeController::class, 'checkout'])->name('checkout');
+Route::post('/checkout',          [\App\Http\Controllers\HomeController::class, 'checkoutSubmit'])->name('checkout.submit');
+
 /*
 |--------------------------------------------------------------------------
 | ViaCEP (público / cliente)

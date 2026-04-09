@@ -180,7 +180,10 @@ $destaques = $destaques->take(6);
                         @else
                         <div class="text-gray-500 text-sm font-semibold mb-3">Consulte</div>
                         @endif
-                        <a href="{{ route('client.orders.catalog') }}?produto={{ $produto->id }}" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm py-2.5 rounded-lg transition">
+                        @php
+                        $checkoutItem = json_encode([['product_id' => $produto->id, 'cycle' => $produto->pricing->first()?->billing_cycle ?? 'monthly', 'domain' => '']]);
+                        @endphp
+                        <a href="{{ route('checkout') }}?items={{ urlencode($checkoutItem) }}" class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm py-2.5 rounded-lg transition">
                             Contratar
                         </a>
                     </div>

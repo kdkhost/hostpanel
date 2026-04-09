@@ -133,11 +133,9 @@ function cartPage() {
         },
         checkout() {
             if (this.items.length === 0) return;
-            @auth('client')
-                window.location = '{{ route("checkout") }}';
-            @else
-                window.location = '{{ route("client.login") }}?redirect=cart';
-            @endauth
+            // Envia itens do carrinho para o checkout público (estilo WHMCS)
+            const itemsParam = encodeURIComponent(JSON.stringify(this.items));
+            window.location = '{{ route("checkout") }}?items=' + itemsParam;
         }
     }
 }

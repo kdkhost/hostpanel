@@ -8,7 +8,10 @@
 @endpush
 
 @section('content')
-<div x-data="{ cycle: 'monthly' }">
+@php
+$initialCycle = $monthly ? 'monthly' : ($annually ? 'annually' : 'monthly');
+@endphp
+<div x-data="{ cycle: '{{ $initialCycle }}' }">
     {{-- Hero --}}
     <section class="bg-gradient-to-br from-slate-900 to-blue-900 text-white py-16">
         <div class="max-w-4xl mx-auto px-4">
@@ -64,8 +67,8 @@
                         <div class="text-blue-200 text-sm">/mês</div>
                         @else <div class="text-lg text-blue-200">Consulte-nos</div> @endif
                     </div>
-                    <a href="{{ route('client.orders.catalog') }}?product={{ $product->id }}"
-                       class="block mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm">
+                    <a :href="'{{ route('checkout') }}?items=' + encodeURIComponent(JSON.stringify([{'product_id': {{ $product->id }}, 'cycle': cycle, 'domain': ''}]))"
+                       class="block mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl text-sm text-center">
                         Contratar Agora
                     </a>
                     <p class="text-blue-300 text-xs mt-2">Ativação imediata após pagamento</p>

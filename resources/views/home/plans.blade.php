@@ -86,7 +86,7 @@
                         @endif
                     </div>
                     <div class="p-6 pt-0">
-                        <a href="{{ route('client.orders.catalog') }}"
+                        <a :href="'{{ route('checkout') }}?items=' + encodeURIComponent(JSON.stringify([{'product_id': {{ $product->id }}, 'cycle': cycle, 'domain': ''}]))"
                            class="block w-full text-center font-bold py-3 rounded-xl transition
                                   {{ $product->featured ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:opacity-90'
                                                         : 'border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white' }}">

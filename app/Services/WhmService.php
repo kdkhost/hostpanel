@@ -105,7 +105,11 @@ class WhmService
             $serverInfo = $this->call('version');
             $acctCount  = $this->call('listaccts', ['want' => 'user']);
 
-            $load = $info['loadavg'] ?? [];
+            $load = [
+                $info['one'] ?? $info['loadavg'][0] ?? 0,
+                $info['five'] ?? $info['loadavg'][1] ?? 0,
+                $info['fifteen'] ?? $info['loadavg'][2] ?? 0
+            ];
 
             return [
                 'cpu_usage'       => round(min(($load[0] ?? 0) * 10, 100), 2),
@@ -114,7 +118,7 @@ class WhmService
                 'load_avg_5'      => $load[1] ?? null,
                 'load_avg_15'     => $load[2] ?? null,
                 'disk_usage'      => $diskInfo['percent'] ?? null,
-                'account_count'   => count($acctCount['acct'] ?? []),
+                'account_count'   => count($acctCount['acct'] ?? $acctCount['data']['acct'] ?? []),
                 'cpanel_version'  => $serverInfo['version'] ?? null,
                 'status'          => 'online',
                 'raw_data'        => compact('info', 'diskInfo', 'memInfo', 'serverInfo'),
@@ -161,7 +165,8 @@ class WhmService
     {
         try {
             $result = $this->call('loadavg');
-            return isset($result['data']['one']);
+            // WHM retorna status 1 em metadados quando o token é válido
+            return ($result['metadata']['result'] ?? 0) == 1 || isset($result['one']);
         } catch (\Throwable) {
             return false;
         }

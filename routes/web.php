@@ -298,6 +298,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::post('/cron/executar', [\App\Http\Controllers\Admin\SettingController::class, 'runTask'])->name('cron.run');
         });
 
+        // Atalho para o Cron (Legado/Direto)
+        Route::get('/cron', [\App\Http\Controllers\Admin\SettingController::class, 'cron'])->name('cron.legacy');
+
         // Temas
         Route::prefix('temas')->name('themes.')->group(function () {
             Route::get('/',                      [\App\Http\Controllers\Admin\ThemeController::class, 'index'])->name('index');

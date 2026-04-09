@@ -339,7 +339,7 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="{{ route('admin.settings.cron') }}" class="nav-link {{ request()->routeIs('admin.settings.cron') ? 'active' : '' }}">
+                                <a href="{{ route('admin.settings.cron') }}" class="nav-link {{ request()->routeIs('admin.settings.cron', 'admin.cron.legacy') ? 'active' : '' }}">
                                     <i class="bi bi-circle nav-icon" style="font-size:.5rem"></i><p>Cron Jobs</p>
                                 </a>
                             </li>

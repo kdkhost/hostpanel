@@ -17,9 +17,23 @@ Artisan::command('inspire', function () {
 | HostPanel Scheduled Tasks
 |--------------------------------------------------------------------------
 */
-Schedule::job(new \App\Jobs\GenerateInvoicesJob)->dailyAt('08:00')->withoutOverlapping();
-Schedule::job(new \App\Jobs\SuspendOverdueServicesJob)->dailyAt('09:00')->withoutOverlapping();
-Schedule::job(new \App\Jobs\ServerHealthCheckJob)->everyFiveMinutes()->withoutOverlapping(10);
+
+// Heartbeat - Monitoramento de Saúde do Cron (Indispensável para o Dashboard)
+Schedule::call(function () {
+    \App\Models\Setting::set('cron.last_heartbeat', now()->timestamp, 'system');
+})->everyMinute();
+
+Schedule::job(new \App\Jobs\GenerateInvoicesJob)->dailyAt('08:00')->withoutOverlapping()->onSuccess(function () {
+    \App\Models\Setting::set('cron.last_run.generate_invoices', now()->timestamp, 'system');
+});
+
+Schedule::job(new \App\Jobs\SuspendOverdueServicesJob)->dailyAt('09:00')->withoutOverlapping()->onSuccess(function () {
+    \App\Models\Setting::set('cron.last_run.suspend_overdue', now()->timestamp, 'system');
+});
+
+Schedule::job(new \App\Jobs\ServerHealthCheckJob)->everyFiveMinutes()->withoutOverlapping(10)->onSuccess(function () {
+    \App\Models\Setting::set('cron.last_run.server_health', now()->timestamp, 'system');
+});
 
 // Aplicar multas e juros em faturas vencidas
 Schedule::call(function () {
@@ -27,7 +41,7 @@ Schedule::call(function () {
         ->where('date_due', '<', now()->toDateString())
         ->update(['status' => 'overdue']);
 
-    \App\Models\Invoice::where('status', 'overdue')->each(function ($invoice) {
+    \App\Models\Invoice::where('status', 'overdue')->get()->each(function ($invoice) {
         app(BillingService::class)->applyLateFees($invoice);
     });
 })->dailyAt('00:30')->name('apply-late-fees');

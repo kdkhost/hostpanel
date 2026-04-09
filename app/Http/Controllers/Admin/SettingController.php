@@ -11,7 +11,7 @@ class SettingController extends Controller
 {
     public function index()
     {
-        $groups = Setting::orderBy('group')->orderBy('key')->get()->groupBy('group');
+        $groups = Setting::query()->orderBy('group')->orderBy('key')->get()->groupBy('group');
         return view('admin.settings.index', compact('groups'));
     }
 
@@ -20,70 +20,83 @@ class SettingController extends Controller
         $basePath   = base_path();
         $phpBinary  = PHP_BINARY ?: '/usr/local/bin/php';
 
-        // Detecta usuário Linux a partir do caminho (/home/USER/...) ou função nativa
+        // Heartbeat status
+        $lastHeartbeat = Setting::get('cron.last_heartbeat');
+        $cronStatus = $lastHeartbeat && (now()->timestamp - $lastHeartbeat) < 120 ? 'online' : 'offline';
+
         $username = null;
         if (preg_match('#^/home/([^/]+)/#', $basePath, $m)) {
             $username = $m[1];
         } elseif (preg_match('#^/var/www/([^/]+)/#', $basePath, $m)) {
             $username = $m[1];
-        } elseif (function_exists('posix_geteuid') && function_exists('posix_getpwuid')) {
-            $username = posix_getpwuid(posix_geteuid())['name'] ?? null;
         }
         $username = $username ?: get_current_user() ?: 'usuario';
 
-        $tasks = [
-            [
+        $rawTasks = [
+            'generate_invoices' => [
                 'name'        => 'Gerar Faturas',
-                'description' => 'Gera automaticamente as faturas de renovação dos serviços ativos antes do vencimento.',
-                'schedule'    => 'Diariamente às 08:00',
+                'description' => 'Gera faturas de renovacao automaticamente.',
+                'schedule'    => 'Diariamente (08:00)',
                 'cron_expr'   => '0 8 * * *',
                 'job'         => 'App\Jobs\GenerateInvoicesJob',
             ],
-            [
-                'name'        => 'Suspender Serviços Vencidos',
-                'description' => 'Suspende serviços com faturas vencidas após o período de carência configurado.',
-                'schedule'    => 'Diariamente às 09:00',
+            'suspend_overdue' => [
+                'name'        => 'Suspender Vencidos',
+                'description' => 'Suspende servicos com faturas em atraso.',
+                'schedule'    => 'Diariamente (09:00)',
                 'cron_expr'   => '0 9 * * *',
                 'job'         => 'App\Jobs\SuspendOverdueServicesJob',
             ],
-            [
-                'name'        => 'Monitoramento de Servidores',
-                'description' => 'Verifica a saúde de todos os servidores: CPU, RAM, disco, latência e status de rede.',
+            'server_health' => [
+                'name'        => 'Saude dos Servidores',
+                'description' => 'Monitora CPU, RAM e integridade da rede.',
                 'schedule'    => 'A cada 5 minutos',
                 'cron_expr'   => '*/5 * * * *',
                 'job'         => 'App\Jobs\ServerHealthCheckJob',
             ],
-            [
-                'name'        => 'Aplicar Multas e Juros',
-                'description' => 'Aplica multa e juros diários nas faturas com status "vencida" conforme configuração financeira.',
-                'schedule'    => 'Diariamente à 00:30',
+            'late_fees' => [
+                'name'        => 'Multas e Juros',
+                'description' => 'Aplica encargos em faturas vencidas.',
+                'schedule'    => 'Diariamente (00:30)',
                 'cron_expr'   => '30 0 * * *',
                 'job'         => 'Closure (apply-late-fees)',
             ],
-            [
-                'name'        => 'Limpar Logs Antigos',
-                'description' => 'Remove logs de login, notificações e gateway com mais de 90 dias para liberar espaço.',
-                'schedule'    => 'Semanalmente (domingo)',
-                'cron_expr'   => '0 0 * * 0',
-                'job'         => 'Closure (clean-old-logs)',
-            ],
-            [
-                'name'        => 'Purgar Tokens de Auto Login',
-                'description' => 'Remove tokens de acesso automático expirados há mais de 30 dias.',
-                'schedule'    => 'Diariamente às 03:00',
-                'cron_expr'   => '0 3 * * *',
-                'job'         => 'App\Services\AutoLoginService::purgeExpired',
-            ],
-            [
-                'name'        => 'Alertas de Serviços Expirando',
-                'description' => 'Envia notificação ao cliente quando um serviço ativo vence em 7 dias.',
-                'schedule'    => 'Diariamente às 10:00',
-                'cron_expr'   => '0 10 * * *',
-                'job'         => 'Closure (service-expiry-alerts)',
-            ],
         ];
 
-        return view('admin.settings.cron', compact('basePath', 'phpBinary', 'username', 'tasks'));
+        $tasks = [];
+        foreach ($rawTasks as $key => $task) {
+            $lastRun = Setting::get("cron.last_run.{$key}");
+            $task['key'] = $key;
+            $task['last_run'] = $lastRun ? \Carbon\Carbon::createFromTimestamp($lastRun)->diffForHumans() : 'Nunca';
+            $task['status'] = $lastRun && (now()->timestamp - $lastRun) < 86400 * 2 ? 'ok' : 'pending';
+            $tasks[] = $task;
+        }
+
+        return view('admin.settings.cron', compact('basePath', 'phpBinary', 'username', 'tasks', 'cronStatus', 'lastHeartbeat'));
+    }
+
+    public function runTask(Request $request): JsonResponse
+    {
+        $taskKey = $request->input('task');
+
+        $jobs = [
+            'generate_invoices' => \App\Jobs\GenerateInvoicesJob::class,
+            'suspend_overdue'   => \App\Jobs\SuspendOverdueServicesJob::class,
+            'server_health'     => \App\Jobs\ServerHealthCheckJob::class,
+        ];
+
+        try {
+            if (isset($jobs[$taskKey])) {
+                $jobClass = $jobs[$taskKey];
+                $jobClass::dispatchSync();
+                Setting::set("cron.last_run.{$taskKey}", now()->timestamp, 'system');
+                return response()->json(['message' => 'Tarefa executada com sucesso!']);
+            }
+
+            return response()->json(['message' => 'Esta tarefa nao pode ser executada manualmente.'], 422);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => 'Erro: ' . $e->getMessage()], 500);
+        }
     }
 
     public function update(Request $request): JsonResponse

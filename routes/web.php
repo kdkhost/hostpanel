@@ -295,6 +295,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::get('/',      [\App\Http\Controllers\Admin\SettingController::class, 'index'])->name('index');
             Route::post('/',     [\App\Http\Controllers\Admin\SettingController::class, 'update'])->name('update');
             Route::get('/cron',  [\App\Http\Controllers\Admin\SettingController::class, 'cron'])->name('cron');
+            Route::post('/cron/executar', [\App\Http\Controllers\Admin\SettingController::class, 'runTask'])->name('cron.run');
         });
 
         // Temas

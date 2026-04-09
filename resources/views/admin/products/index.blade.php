@@ -130,7 +130,7 @@
                                     <label class="form-label fw-semibold">Tagline</label>
                                     <input type="text" class="form-control shadow-sm" x-model="form.tagline" placeholder="Ex: Ideal para sites pequenos">
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <label class="form-label fw-semibold">Grupo de Produtos <span class="text-danger">*</span></label>
                                     <select class="form-select shadow-sm @if($groups->isEmpty()) is-invalid @endif" x-model="form.product_group_id" required>
                                         <option value="">Selecione um grupo...</option>
@@ -139,7 +139,18 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
+                                    <label class="form-label fw-semibold">Tipo de Produto <span class="text-danger">*</span></label>
+                                    <select class="form-select shadow-sm" x-model="form.type" required>
+                                        <option value="hosting">Hospedagem</option>
+                                        <option value="reseller">Revenda</option>
+                                        <option value="vps">VPS</option>
+                                        <option value="dedicated">Dedicado</option>
+                                        <option value="domain">Domínio</option>
+                                        <option value="other">Outro</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
                                     <label class="form-label fw-semibold">Módulo de Automação</label>
                                     <select class="form-select shadow-sm" x-model="form.module">
                                         <option value="none">Nenhum (Manual)</option>
@@ -255,15 +266,39 @@ function productsTable() {
         async save() {
             this.saving = true;
             this.form.features = this.featuresText.split('\n').map(s => s.trim()).filter(Boolean);
+            
+            // Transforma o objeto de preços em um array para o servidor
+            const pricing = [];
+            for (const [cycle, value] of Object.entries(this.form.prices || {})) {
+                if (value !== null && value !== '' && value > 0) {
+                    pricing.push({
+                        billing_cycle: cycle,
+                        currency: 'BRL',
+                        price: parseFloat(value),
+                        setup_fee: 0,
+                        active: true
+                    });
+                }
+            }
+            
+            const payload = { ...this.form, pricing: pricing };
             const url    = this.form.id ? `/admin/produtos/${this.form.id}` : '/admin/produtos';
             const method = this.form.id ? 'PUT' : 'POST';
-            const d      = await HostPanel.fetch(url, { method, body: JSON.stringify(this.form) });
-            this.saving  = false;
-            if (d.product) {
-                bootstrap.Modal.getInstance(document.getElementById('productModal'))?.hide();
-                HostPanel.toast('Produto salvo com sucesso!');
-                this.load();
-            } else HostPanel.toast(d.message || 'Erro ao salvar.', 'danger');
+            
+            try {
+                const d = await HostPanel.fetch(url, { method, body: JSON.stringify(payload) });
+                this.saving = false;
+                if (d.product || d.message?.includes('sucesso')) {
+                    bootstrap.Modal.getInstance(document.getElementById('productModal'))?.hide();
+                    HostPanel.toast('Produto salvo com sucesso!');
+                    this.load();
+                } else {
+                    HostPanel.toast(d.message || 'Erro ao salvar.', 'danger');
+                }
+            } catch (e) {
+                this.saving = false;
+                HostPanel.toast('Falha na operacao de salvamento.', 'danger');
+            }
         },
 
         async toggleActive(p) {

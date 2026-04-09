@@ -59,7 +59,7 @@ class ProductController extends Controller
             'name' => 'required|string|max:150',
             'description' => 'nullable|string',
             'welcome_email' => 'nullable|string',
-            'type' => 'required|in:shared,reseller,vps,dedicated,domain,addon,other',
+            'type' => 'required|in:shared,hosting,reseller,vps,dedicated,domain,addon,other',
             'module' => 'nullable|string|max:50',
             'billing_cycle_type' => 'nullable|in:one_time,recurring',
             'require_domain' => 'nullable|boolean',

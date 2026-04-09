@@ -553,7 +553,7 @@ async function searchCep() {
     this.cepError = '';
 
     try {
-        const response = await fetch(`{{ route('viacep') }}/${rawCep}`);
+        const response = await fetch(`/api/viacep/${rawCep}`);
         const data = await response.json();
 
         if (data.erro) {

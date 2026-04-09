@@ -115,7 +115,7 @@
                                     <i class="bi bi-exclamation-triangle-fill fs-4 me-3"></i>
                                     <div>
                                         <div class="fw-bold">Atenção: Nenhum grupo de produtos encontrado!</div>
-                                        <div class="small">Você precisa criar ao menos um grupo antes de cadastrar produtos. <a href="{{ route('admin.product-groups.index') }}" class="alert-link">Clique aqui para criar agora.</a></div>
+                                        <div class="small">Você precisa criar ao menos um grupo antes de cadastrar produtos. <a href="{{ route('admin.products.groups') }}" class="alert-link">Clique aqui para criar agora.</a></div>
                                     </div>
                                 </div>
                             @endif

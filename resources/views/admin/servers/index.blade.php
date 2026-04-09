@@ -123,7 +123,7 @@
     </div>
 
     <div class="modal fade" id="serverModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" x-text="editingId ? 'Editar servidor' : 'Adicionar servidor'"></h5>
@@ -215,8 +215,9 @@
                                 <div class="text-muted" style="font-size: .7rem">0 = Sem limite</div>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label fw-semibold">Datacenter</label>
-                                <input type="text" class="form-control" x-model="serverForm.datacenter" placeholder="Ex: OVH, AWS">
+                                <label class="form-label fw-semibold text-nowrap">Capacitado em (DC)</label>
+                                <input type="text" class="form-control" x-model="serverForm.dc_name" placeholder="Ex: OVH, AWS, Google">
+                                <div class="text-muted" style="font-size: .7rem">Nome do Datacenter</div>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label fw-semibold">Localização</label>
@@ -237,14 +238,18 @@
                             </div>
 
                             <div class="col-12 border-top pt-3 mt-3">
-                                <div class="d-flex gap-4">
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" x-model="serverForm.active" id="swActive">
-                                        <label class="form-check-label fw-semibold" for="swActive">Servidor Ativo</label>
+                                <div class="row align-items-center bg-light p-2 rounded-3 mx-0 border">
+                                    <div class="col-md-6 border-end">
+                                        <div class="form-check form-switch m-0 pt-1">
+                                            <input class="form-check-input" type="checkbox" x-model="serverForm.active" id="swActive">
+                                            <label class="form-check-label fw-bold" for="swActive" style="cursor: pointer">Servidor Ativo</label>
+                                        </div>
                                     </div>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input" type="checkbox" x-model="serverForm.secure" id="swSecure">
-                                        <label class="form-check-label fw-semibold" for="swSecure">Usar HTTPS/SSL</label>
+                                    <div class="col-md-6">
+                                        <div class="form-check form-switch m-0 pt-1">
+                                            <input class="form-check-input" type="checkbox" x-model="serverForm.secure" id="swSecure">
+                                            <label class="form-check-label fw-bold" for="swSecure" style="cursor: pointer">Usar HTTPS/SSL</label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -126,6 +126,41 @@ class GatewayManager
         return $result;
     }
 
+    /**
+     * Processa webhook de gateway.
+     */
+    public static function processWebhook(Gateway $gateway, array $webhookData): void
+    {
+        try {
+            $driver = static::make($gateway);
+            
+            // Extrai ID da transação do webhook
+            $transactionId = $driver->extractTransactionId($webhookData);
+            if (!$transactionId) {
+                Log::warning("No transaction ID found in webhook data", ['gateway' => $gateway->driver, 'data' => $webhookData]);
+                return;
+            }
+            
+            // Busca transação
+            $transaction = Transaction::where('gateway_transaction_id', $transactionId)
+                ->where('gateway', $gateway->driver)
+                ->first();
+                
+            if (!$transaction) {
+                Log::warning("Transaction not found for webhook", ['gateway' => $gateway->driver, 'transaction_id' => $transactionId]);
+                return;
+            }
+            
+            // Verifica status do pagamento
+            $isPaid = $driver->isPaymentConfirmed($webhookData);
+            if (!$isPaid) {
+                Log::info("Webhook received but payment not confirmed", ['gateway' => $gateway->driver, 'transaction_id' => $transactionId]);
+                return;
+            }
+            
+            // Confirma pagamento
+            static::confirmPayment($transaction->invoice, $transaction, $webhookData);
+            
     public static function availableDrivers(): array
     {
         return array_keys(self::$drivers);

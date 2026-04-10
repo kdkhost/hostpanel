@@ -133,4 +133,30 @@ abstract class AbstractGateway implements GatewayInterface
     {
         return $this->charge($invoice, array_merge($options, ['recurring' => true]));
     }
+
+    public function extractTransactionId(array $webhookData): ?string
+    {
+        // Implementação padrão - deve ser sobrescrita pelos gateways específicos
+        return $webhookData['transaction_id'] ?? $webhookData['id'] ?? null;
+    }
+
+    public function isPaymentConfirmed(array $webhookData): bool
+    {
+        // Implementação padrão - deve ser sobrescrita pelos gateways específicos
+        $status = $webhookData['status'] ?? '';
+        return in_array(strtolower($status), ['paid', 'approved', 'completed', 'confirmed']);
+    }
+
+    public function testConnection(): array
+    {
+        // Implementação padrão - pode ser sobrescrita pelos gateways específicos
+        return [
+            'success' => true,
+            'message' => 'Gateway configurado (teste básico)',
+            'details' => [
+                'driver' => $this->gateway->driver,
+                'sandbox' => $this->sandbox,
+            ]
+        ];
+    }
 }

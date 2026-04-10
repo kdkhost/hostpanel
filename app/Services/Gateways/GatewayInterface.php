@@ -56,6 +56,16 @@ interface GatewayInterface
      */
     public function getStatus(string $transactionId): array;
 
+    /**
+     * Extrai ID da transação dos dados do webhook.
+     */
+    public function extractTransactionId(array $webhookData): ?string;
+
+    /**
+     * Verifica se o pagamento foi confirmado nos dados do webhook.
+     */
+    public function isPaymentConfirmed(array $webhookData): bool;
+
     public function supportsRecurring(): bool;
     public function supportsRefund(): bool;
     public function supportsPartialRefund(): bool;

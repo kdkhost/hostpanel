@@ -17,30 +17,52 @@ class BillingService
     public function generateInvoiceForService(Service $service): Invoice
     {
         return DB::transaction(function () use ($service) {
+            // Gera número único da fatura
+            $invoiceNumber = $this->generateInvoiceNumber();
+            
             $price = $service->price;
+            $setupFee = $service->setup_fee ?? 0;
+            $subtotal = $price + $setupFee;
 
             $invoice = Invoice::create([
+                'number'     => $invoiceNumber,
                 'client_id'  => $service->client_id,
                 'order_id'   => $service->order_id,
                 'status'     => 'pending',
-                'subtotal'   => $price,
-                'total'      => $price,
-                'amount_due' => $price,
-                'currency'   => $service->currency,
+                'subtotal'   => $subtotal,
+                'total'      => $subtotal,
+                'amount_due' => $subtotal,
+                'currency'   => $service->currency ?? 'BRL',
                 'date_issued'=> now()->toDateString(),
                 'date_due'   => now()->addDays(7)->toDateString(),
             ]);
 
+            // Calcula período correto da cobrança
+            $periodFrom = $service->next_due_date ?? now();
+            $periodTo = $this->calculatePeriodEnd($service, $periodFrom);
+
             InvoiceItem::create([
                 'invoice_id'  => $invoice->id,
                 'service_id'  => $service->id,
-                'description' => $service->product_name . ' (' . $service->billing_cycle . ')',
+                'description' => $service->product_name . ' (' . $this->formatBillingCycle($service->billing_cycle) . ')',
                 'amount'      => $price,
                 'unit_price'  => $price,
-                'period_from' => $service->next_due_date ?? now(),
-                'period_to'   => $this->calculatePeriodEnd($service),
+                'period_from' => $periodFrom,
+                'period_to'   => $periodTo,
                 'type'        => 'service',
             ]);
+
+            // Adiciona taxa de setup se houver
+            if ($setupFee > 0) {
+                InvoiceItem::create([
+                    'invoice_id'  => $invoice->id,
+                    'service_id'  => $service->id,
+                    'description' => 'Taxa de Setup - ' . $service->product_name,
+                    'amount'      => $setupFee,
+                    'unit_price'  => $setupFee,
+                    'type'        => 'setup',
+                ]);
+            }
 
             return $invoice->fresh(['items', 'client']);
         });
@@ -49,6 +71,18 @@ class BillingService
     public function applyPayment(Invoice $invoice, float $amount, string $gateway, ?string $gatewayTransactionId = null): Transaction
     {
         return DB::transaction(function () use ($invoice, $amount, $gateway, $gatewayTransactionId) {
+            // Verifica se já existe transação com mesmo gateway_transaction_id (idempotência)
+            if ($gatewayTransactionId) {
+                $existingTransaction = Transaction::where('gateway_transaction_id', $gatewayTransactionId)
+                    ->where('gateway', $gateway)
+                    ->first();
+                
+                if ($existingTransaction) {
+                    Log::warning("Duplicate transaction attempt: {$gatewayTransactionId}");
+                    return $existingTransaction;
+                }
+            }
+
             $transaction = Transaction::create([
                 'client_id'              => $invoice->client_id,
                 'invoice_id'             => $invoice->id,
@@ -56,15 +90,15 @@ class BillingService
                 'gateway_transaction_id' => $gatewayTransactionId,
                 'type'                   => 'payment',
                 'amount'                 => $amount,
-                'currency'               => $invoice->currency,
+                'currency'               => $invoice->currency ?? 'BRL',
                 'status'                 => 'completed',
                 'description'            => "Pagamento da fatura #{$invoice->number}",
             ]);
 
             $newAmountPaid = $invoice->amount_paid + $amount;
-            $newAmountDue  = max(0, $invoice->total - $newAmountPaid);
+            $newAmountDue  = max(0, $invoice->total - $newAmountPaid - $invoice->credit_applied);
 
-            $status = $newAmountDue <= 0 ? 'paid' : 'partially_paid';
+            $status = $newAmountDue <= 0.01 ? 'paid' : 'partially_paid'; // Tolerância de 1 centavo
 
             $invoice->update([
                 'amount_paid' => $newAmountPaid,
@@ -79,7 +113,7 @@ class BillingService
                 $this->handlePaidInvoice($invoice);
             }
 
-            Log::info("Payment applied to invoice #{$invoice->number}: R$ {$amount} via {$gateway}");
+            Log::info("Payment applied to invoice #{$invoice->number}: {$invoice->currency} {$amount} via {$gateway}");
 
             return $transaction;
         });
@@ -122,9 +156,9 @@ class BillingService
         });
     }
 
-    public function addCredit(Client $client, float $amount, string $description, ?int $adminId = null): Credit
+    public function addCredit(Client $client, float $amount, string $description, ?int $adminId = null, string $source = 'manual'): Credit
     {
-        return DB::transaction(function () use ($client, $amount, $description, $adminId) {
+        return DB::transaction(function () use ($client, $amount, $description, $adminId, $source) {
             $balanceBefore = $client->credit_balance;
             $balanceAfter  = $balanceBefore + $amount;
 
@@ -138,6 +172,8 @@ class BillingService
                 'balance_before' => $balanceBefore,
                 'balance_after'  => $balanceAfter,
                 'admin_id'       => $adminId,
+                'source'         => $source, // manual, refund, affiliate, bonus, etc
+                'created_by'     => $adminId ? 'admin' : 'system',
             ]);
         });
     }
@@ -148,17 +184,33 @@ class BillingService
         if (!$invoice->date_due->isPast()) return;
 
         $daysOverdue  = $invoice->date_due->diffInDays(now());
-        $lateFeeRate  = config('hostpanel.invoice.late_fee', 2);
-        $dailyRate    = config('hostpanel.invoice.interest_daily', 0.033);
+        $lateFeeRate  = (float) \App\Models\Setting::get('billing.late_fee_percent', 2.0);
+        $dailyRate    = (float) \App\Models\Setting::get('billing.interest_daily', 0.033);
+        $maxLateFeePercent = (float) \App\Models\Setting::get('billing.max_late_fee_percent', 50.0);
 
-        $lateFee  = round($invoice->subtotal * ($lateFeeRate / 100), 2);
+        // Calcula multa (apenas uma vez)
+        $lateFee = $invoice->late_fee ?: round($invoice->subtotal * ($lateFeeRate / 100), 2);
+        
+        // Calcula juros diários
         $interest = round($invoice->subtotal * ($dailyRate / 100) * $daysOverdue, 2);
+
+        // Aplica limite máximo
+        $maxFeeAmount = round($invoice->subtotal * ($maxLateFeePercent / 100), 2);
+        $totalFees = $lateFee + $interest;
+        
+        if ($totalFees > $maxFeeAmount) {
+            $interest = $maxFeeAmount - $lateFee;
+            if ($interest < 0) $interest = 0;
+        }
+
+        $newTotal = $invoice->subtotal - $invoice->discount + $invoice->tax + $lateFee + $interest;
+        $newAmountDue = $newTotal - $invoice->amount_paid - $invoice->credit_applied;
 
         $invoice->update([
             'late_fee'   => $lateFee,
             'interest'   => $interest,
-            'total'      => $invoice->subtotal - $invoice->discount + $lateFee + $interest,
-            'amount_due' => $invoice->subtotal - $invoice->discount + $lateFee + $interest - $invoice->amount_paid,
+            'total'      => $newTotal,
+            'amount_due' => max(0, $newAmountDue),
             'status'     => 'overdue',
         ]);
     }
@@ -178,17 +230,60 @@ class BillingService
         }
     }
 
-    protected function calculatePeriodEnd(Service $service): string
+    protected function calculatePeriodEnd(Service $service, $periodFrom = null): string
     {
         $months = \App\Models\ProductPricing::cycleMonths($service->billing_cycle);
-        return now()->addMonths($months)->toDateString();
+        if (!$months) {
+            throw new \InvalidArgumentException("Invalid billing cycle: {$service->billing_cycle}");
+        }
+        
+        $baseDate = $periodFrom ? \Carbon\Carbon::parse($periodFrom) : now();
+        return $baseDate->copy()->addMonths($months)->toDateString();
     }
 
     protected function calculateNextDueDate(Service $service): string
     {
         $months = \App\Models\ProductPricing::cycleMonths($service->billing_cycle);
-        $base   = $service->next_due_date ?? now();
-        return $base->addMonths($months)->toDateString();
+        if (!$months) {
+            throw new \InvalidArgumentException("Invalid billing cycle: {$service->billing_cycle}");
+        }
+        
+        $base = $service->next_due_date ? \Carbon\Carbon::parse($service->next_due_date) : now();
+        return $base->copy()->addMonths($months)->toDateString();
+    }
+    
+    private function generateInvoiceNumber(): string
+    {
+        $prefix = \App\Models\Setting::get('billing.invoice_prefix', 'INV');
+        $year = now()->year;
+        
+        // Busca o último número do ano atual
+        $lastInvoice = Invoice::where('number', 'like', "{$prefix}{$year}%")
+            ->orderBy('number', 'desc')
+            ->first();
+        
+        if ($lastInvoice && preg_match("/^{$prefix}{$year}(\d+)$/", $lastInvoice->number, $matches)) {
+            $nextNumber = (int)$matches[1] + 1;
+        } else {
+            $nextNumber = 1;
+        }
+        
+        return $prefix . $year . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
+    }
+    
+    private function formatBillingCycle(string $cycle): string
+    {
+        $cycles = [
+            'monthly' => 'Mensal',
+            'quarterly' => 'Trimestral',
+            'semi_annual' => 'Semestral',
+            'annual' => 'Anual',
+            'biennial' => 'Bienal',
+            'triennial' => 'Trienal',
+            'one_time' => 'Pagamento Único',
+        ];
+        
+        return $cycles[$cycle] ?? ucfirst($cycle);
     }
 
     /**

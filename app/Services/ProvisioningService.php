@@ -14,6 +14,7 @@ class ProvisioningService
     public function provision(Service $service): bool
     {
         $service->update(['provision_status' => 'processing']);
+        $originalServerId = $service->server_id;
 
         try {
             $server = $this->resolveServer($service);
@@ -21,6 +22,7 @@ class ProvisioningService
                 throw new \RuntimeException('Nenhum servidor disponível para provisionamento.');
             }
 
+            // Atualiza servidor apenas temporariamente
             $service->update(['server_id' => $server->id]);
             $service->setRelation('server', $server);
 
@@ -28,12 +30,13 @@ class ProvisioningService
             $result = $module->createAccount($service);
 
             if (empty($result['success'])) {
-                throw new \RuntimeException('Módulo retornou falha ao criar conta.');
+                throw new \RuntimeException($result['message'] ?? 'Módulo retornou falha ao criar conta.');
             }
 
             $username = $result['username'];
             $password = $result['password'];
 
+            // Sucesso - atualiza todos os dados
             $service->update([
                 'server_id'          => $server->id,
                 'username'           => $username,
@@ -55,10 +58,19 @@ class ProvisioningService
             return true;
 
         } catch (\Exception $e) {
+            // Rollback: restaura servidor original e limpa dados de provisionamento
             $service->update([
-                'provision_status' => 'failed',
-                'provision_log'    => $e->getMessage(),
+                'server_id'          => $originalServerId,
+                'username'           => null,
+                'password_encrypted' => null,
+                'server_hostname'    => null,
+                'server_ip'          => null,
+                'nameserver1'        => null,
+                'nameserver2'        => null,
+                'provision_status'   => 'failed',
+                'provision_log'      => $e->getMessage(),
             ]);
+            
             Log::error("Provision failed for service #{$service->id}: " . $e->getMessage());
             return false;
         }

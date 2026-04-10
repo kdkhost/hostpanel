@@ -31,18 +31,34 @@ class SuspendOverdueServicesJob implements ShouldQueue
         foreach ($overdueInvoices as $invoice) {
             foreach ($invoice->items as $item) {
                 $service = $item->service;
+                
+                // Verifica se o serviço existe e está ativo (evita suspensão duplicada)
                 if (!$service || $service->status !== 'active') continue;
 
-                if ($provisioning->suspend($service, "Inadimplência - Fatura #{$invoice->number}")) {
-                    $suspended++;
-                    $notification->send($invoice->client, 'service_suspended', [
-                        'name'         => $invoice->client->name,
-                        'product'      => $service->product_name,
-                        'invoice'      => $invoice->number,
-                        'due_date'     => $invoice->date_due->format('d/m/Y'),
-                        'action_url'   => url('/cliente/faturas/' . $invoice->id),
-                        'message'      => "Seu serviço {$service->product_name} foi suspenso por inadimplência.",
-                    ]);
+                try {
+                    if ($provisioning->suspend($service, "Inadimplência - Fatura #{$invoice->number}")) {
+                        $suspended++;
+                        
+                        // Notifica apenas uma vez por cliente, não por serviço
+                        $alreadyNotified = $invoice->notificationLogs()
+                            ->where('trigger', 'service_suspended')
+                            ->where('created_at', '>=', now()->subDay())
+                            ->exists();
+                            
+                        if (!$alreadyNotified) {
+                            $notification->send($invoice->client, 'service_suspended', [
+                                'name'         => $invoice->client->name,
+                                'product'      => $service->product_name,
+                                'invoice'      => $invoice->number,
+                                'due_date'     => $invoice->date_due->format('d/m/Y'),
+                                'amount'       => number_format($invoice->amount_due, 2, ',', '.'),
+                                'action_url'   => url('/cliente/faturas/' . $invoice->id),
+                                'message'      => "Seu serviço {$service->product_name} foi suspenso por inadimplência.",
+                            ]);
+                        }
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Failed to suspend service #{$service->id}: " . $e->getMessage());
                 }
             }
         }

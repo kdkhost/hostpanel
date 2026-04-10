@@ -71,55 +71,80 @@ class AffiliateService
     /**
      * Generate commission when an invoice from a referred client is paid.
      */
-    public function processInvoice(Invoice $invoice): ?AffiliateCommission
+    public function processInvoice(Invoice $invoice, ?Affiliate $affiliate = null): ?AffiliateCommission
     {
         if (!Setting::get('affiliate.enabled', false)) return null;
 
-        $referral = AffiliateReferral::where('referred_client_id', $invoice->client_id)->first();
-        if (!$referral) return null;
+        // Validações de segurança
+        if ($invoice->status !== 'paid') {
+            throw new \InvalidArgumentException('Invoice must be paid to process commission');
+        }
 
-        $affiliate = $referral->affiliate;
-        if (!$affiliate || $affiliate->status !== 'active') return null;
+        if (!$affiliate) {
+            $referral = AffiliateReferral::where('referred_client_id', $invoice->client_id)->first();
+            if (!$referral) return null;
+            $affiliate = $referral->affiliate;
+        }
 
-        // Check if commission already exists for this invoice
+        if (!$affiliate || $affiliate->status !== 'active') {
+            throw new \InvalidArgumentException('Affiliate must be active to receive commission');
+        }
+
+        // Evita comissão duplicada
         $existing = AffiliateCommission::where('invoice_id', $invoice->id)->first();
         if ($existing) return $existing;
 
         // Only on first invoice or recurring? (setting)
+        $referral = AffiliateReferral::where('affiliate_id', $affiliate->id)
+            ->where('referred_client_id', $invoice->client_id)
+            ->first();
+            
         $onlyFirst = Setting::get('affiliate.only_first_invoice', false);
-        if ($onlyFirst && $referral->converted) return null;
+        if ($onlyFirst && $referral && $referral->converted) return null;
 
         // Calculate commission
-        $rate   = $affiliate->commission_rate;
-        $type   = $affiliate->commission_type;
-        $amount = $type === 'percentage'
-            ? round($invoice->total * ($rate / 100), 2)
-            : $rate;
+        $rate = $affiliate->commission_rate;
+        $type = $affiliate->commission_type;
+        $invoiceAmount = $invoice->subtotal; // Usa subtotal, não total (sem taxas)
 
-        // Min payout check
-        $minCommission = (float) Setting::get('affiliate.min_commission', 0);
+        if ($type === 'percentage') {
+            $amount = round($invoiceAmount * ($rate / 100), 2);
+            
+            // Validação: comissão não pode exceder 100% do valor da fatura
+            if ($amount > $invoiceAmount) {
+                $amount = $invoiceAmount;
+            }
+        } else {
+            $amount = min($rate, $invoiceAmount); // Valor fixo limitado ao valor da fatura
+        }
+
+        // Validação: comissão mínima
+        $minCommission = (float) Setting::get('affiliate.min_commission', 0.01);
         if ($amount < $minCommission) return null;
+
+        $autoApprove = Setting::get('affiliate.auto_approve', false);
+        $status = $autoApprove ? 'approved' : 'pending';
 
         $commission = AffiliateCommission::create([
             'affiliate_id'      => $affiliate->id,
-            'referral_id'       => $referral->id,
+            'referral_id'       => $referral ? $referral->id : null,
             'invoice_id'        => $invoice->id,
-            'invoice_amount'    => $invoice->total,
+            'invoice_amount'    => $invoiceAmount,
             'commission_amount' => $amount,
             'rate_applied'      => $rate,
             'type'              => $type,
-            'status'            => Setting::get('affiliate.auto_approve', false) ? 'approved' : 'pending',
-            'description'       => "Comissão da fatura #{$invoice->id}",
+            'status'            => $status,
+            'description'       => "Comissão da fatura #{$invoice->number}",
         ]);
 
         // If auto-approved, credit balance immediately
-        if ($commission->status === 'approved') {
+        if ($status === 'approved') {
             $affiliate->increment('balance', $amount);
             $affiliate->increment('total_earned', $amount);
         }
 
         // Mark referral as converted
-        if (!$referral->converted) {
+        if ($referral && !$referral->converted) {
             $referral->update(['converted' => true, 'converted_at' => now()]);
             $affiliate->increment('total_conversions');
         }

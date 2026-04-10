@@ -338,7 +338,7 @@
                                         <div class="input-group">
                                             <input type="text" class="form-control font-monospace bg-light" 
                                                    id="webhookUrl" readonly
-                                                   value="{{ url('/webhook/gateway/' . $gateway->driver) }}">
+                                                   value="{{ url('/webhook/' . $gateway->driver . '/INVOICE_ID') }}">
                                             <button class="btn btn-outline-secondary" type="button" onclick="copyWebhookUrl()">
                                                 <i class="fas fa-copy"></i> Copiar
                                             </button>
@@ -478,6 +478,11 @@ $(document).ready(function() {
             data: { _token: '{{ csrf_token() }}' },
             success: function(response) {
                 if (response.success) {
+                    toastr.success(response.message);
+                } else {
+                    toastr.warning(response.message);
+                }
+            },
                     toastr.success(response.message);
                 } else {
                     toastr.warning(response.message);

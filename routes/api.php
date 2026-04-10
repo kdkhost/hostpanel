@@ -65,7 +65,3 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
         Route::delete('webhooks/{webhook}', [V1\WebhookController::class, 'destroy']);
     });
 });
-
-// Webhook público (gateway callbacks)
-Route::post('/webhook/{gateway}', [\App\Http\Controllers\Admin\GatewayController::class, 'webhook'])
-    ->name('api.webhook.gateway');

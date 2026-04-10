@@ -161,6 +161,12 @@ class GatewayManager
             // Confirma pagamento
             static::confirmPayment($transaction->invoice, $transaction, $webhookData);
             
+        } catch (\Exception $e) {
+            Log::error("Webhook processing failed for gateway {$gateway->driver}: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
     public static function availableDrivers(): array
     {
         return array_keys(self::$drivers);

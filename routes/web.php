@@ -428,10 +428,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
             ->name('settings.whatsapp.save');
         Route::post('configuracoes/whatsapp/testar', [\App\Http\Controllers\Admin\SettingController::class, 'testWhatsApp'])
             ->name('settings.whatsapp.test');
-
-        // Webhooks recebidos de gateways (legado)
-        Route::post('/webhook/{gateway}', [\App\Http\Controllers\Admin\GatewayController::class, 'webhook'])
-            ->name('gateway.webhook')->withoutMiddleware(['auth.admin']);
     });
 });
 

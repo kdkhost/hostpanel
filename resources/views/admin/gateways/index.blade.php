@@ -17,16 +17,16 @@
                             <!-- Logo/Ícone do Gateway -->
                             <div class="gateway-logo">
                                 <template x-if="gw.driver === 'paghiper'">
-                                    <img src="https://paghiper.com/assets/img/logo-paghiper.png" alt="PagHiper" class="gateway-img">
+                                    <img src="https://paghiper.com/assets/img/logo-paghiper-horizontal.png" alt="PagHiper" class="gateway-img">
                                 </template>
                                 <template x-if="gw.driver === 'mercadopago'">
-                                    <img src="https://http2.mlstatic.com/frontend-assets/ml-web-navigation/ui-navigation/5.21.22/mercadolibre/logo_large_25years@2x.png" alt="Mercado Pago" class="gateway-img">
+                                    <img src="https://http2.mlstatic.com/frontend-assets/ml-web-navigation/ui-navigation/5.21.22/mercadolibre/logo__large_plus.png" alt="Mercado Pago" class="gateway-img">
                                 </template>
                                 <template x-if="gw.driver === 'pagbank'">
                                     <img src="https://assets.pagseguro.com.br/ps-sdk-web/2.0.0/assets/images/logos/pagbank.svg" alt="PagBank" class="gateway-img">
                                 </template>
                                 <template x-if="gw.driver === 'efirpro'">
-                                    <img src="https://gerencianet.com.br/wp-content/uploads/2021/03/logo-efi-pay.png" alt="Efí Pro" class="gateway-img">
+                                    <img src="https://sejaefi.com.br/wp-content/uploads/2021/03/logo-efi-pay.png" alt="Efí Pro" class="gateway-img">
                                 </template>
                                 <template x-if="gw.driver === 'bancointer'">
                                     <div class="gateway-icon bg-orange">
@@ -382,7 +382,7 @@ function gatewaysIndex() {
         },
 
         showWebhookUrl(driver) {
-            const url = `{{ url('/webhook/gateway') }}/${driver}`;
+            const url = `{{ url('/webhook') }}/${driver}/INVOICE_ID`;
             document.getElementById('webhookUrl').value = url;
             new bootstrap.Modal(document.getElementById('webhookModal')).show();
         },

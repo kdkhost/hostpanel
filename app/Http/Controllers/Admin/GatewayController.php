@@ -54,21 +54,29 @@ class GatewayController extends Controller
     public function configureSave(Request $request, Gateway $gateway): JsonResponse
     {
         $request->validate([
-            'active' => 'boolean',
-            'test_mode' => 'boolean',
+            'active' => 'sometimes|boolean',
+            'test_mode' => 'sometimes|boolean',
             'fee_fixed' => 'nullable|numeric|min:0',
             'fee_percentage' => 'nullable|numeric|min:0|max:100',
             'sort_order' => 'nullable|integer|min:0',
-            'supports_recurring' => 'boolean',
-            'supports_refund' => 'boolean',
+            'supports_recurring' => 'sometimes|boolean',
+            'supports_refund' => 'sometimes|boolean',
             'due_days' => 'nullable|integer|min:1|max:365',
             'settings' => 'nullable|array',
         ]);
 
-        $data = $request->only([
-            'active', 'test_mode', 'fee_fixed', 'fee_percentage',
-            'sort_order', 'supports_recurring', 'supports_refund', 'due_days'
-        ]);
+        $data = [];
+        
+        // Processa campos básicos
+        if ($request->has('active')) $data['active'] = $request->boolean('active');
+        if ($request->has('test_mode')) $data['test_mode'] = $request->boolean('test_mode');
+        if ($request->has('supports_recurring')) $data['supports_recurring'] = $request->boolean('supports_recurring');
+        if ($request->has('supports_refund')) $data['supports_refund'] = $request->boolean('supports_refund');
+        
+        if ($request->filled('fee_fixed')) $data['fee_fixed'] = $request->fee_fixed;
+        if ($request->filled('fee_percentage')) $data['fee_percentage'] = $request->fee_percentage;
+        if ($request->filled('sort_order')) $data['sort_order'] = $request->sort_order;
+        if ($request->filled('due_days')) $data['due_days'] = $request->due_days;
 
         // Processa configurações específicas do gateway
         if ($request->has('settings') && is_array($request->settings)) {

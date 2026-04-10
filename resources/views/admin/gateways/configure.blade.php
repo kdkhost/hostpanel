@@ -34,6 +34,14 @@
                     <form id="gatewayForm">
                         @csrf
                         @method('PUT')
+                        
+                        <!-- Hidden fields para checkboxes -->
+                        <input type="hidden" name="active" value="0">
+                        <input type="hidden" name="test_mode" value="0">
+                        <input type="hidden" name="supports_recurring" value="0">
+                        <input type="hidden" name="supports_refund" value="0">
+                        <input type="hidden" name="settings[pass_fee]" value="0">
+                        <input type="hidden" name="settings[late_fee_enabled]" value="0">
 
                         <!-- Navegação por Abas -->
                         <ul class="nav nav-tabs mb-4" id="configTabs" role="tablist">
@@ -74,7 +82,7 @@
                                     <!-- Modo Sandbox/Produção -->
                                     <div class="col-12">
                                         <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="test_mode" 
+                                            <input class="form-check-input" type="checkbox" name="test_mode" id="test_mode" value="1"
                                                    {{ $gateway->test_mode ? 'checked' : '' }}>
                                             <label class="form-check-label fw-semibold" for="test_mode">
                                                 Modo Sandbox (Testes)
@@ -259,7 +267,7 @@
                                     <div class="col-12">
                                         <div class="form-check form-switch">
                                             <input class="form-check-input" type="checkbox" name="settings[pass_fee]" 
-                                                   id="pass_fee" {{ ($settings['pass_fee'] ?? false) ? 'checked' : '' }}>
+                                                   id="pass_fee" value="1" {{ ($settings['pass_fee'] ?? false) ? 'checked' : '' }}>
                                             <label class="form-check-label fw-semibold" for="pass_fee">
                                                 Repassar taxa ao cliente
                                             </label>
@@ -270,7 +278,7 @@
                                     <div class="col-12">
                                         <div class="form-check form-switch">
                                             <input class="form-check-input" type="checkbox" name="settings[late_fee_enabled]" 
-                                                   id="late_fee_enabled" {{ ($settings['late_fee_enabled'] ?? false) ? 'checked' : '' }}>
+                                                   id="late_fee_enabled" value="1" {{ ($settings['late_fee_enabled'] ?? false) ? 'checked' : '' }}>
                                             <label class="form-check-label fw-semibold" for="late_fee_enabled">
                                                 Aplicar multa e juros por atraso no gateway
                                             </label>
@@ -303,21 +311,21 @@
                                 <div class="row g-3">
                                     <div class="col-12">
                                         <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="active" 
+                                            <input class="form-check-input" type="checkbox" name="active" id="active" value="1"
                                                    {{ $gateway->active ? 'checked' : '' }}>
                                             <label class="form-check-label fw-semibold" for="active">Gateway Ativo</label>
                                         </div>
                                     </div>
                                     <div class="col-12">
                                         <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="supports_recurring" 
+                                            <input class="form-check-input" type="checkbox" name="supports_recurring" id="supports_recurring" value="1"
                                                    {{ $gateway->supports_recurring ? 'checked' : '' }}>
                                             <label class="form-check-label fw-semibold" for="supports_recurring">Suporta Recorrência</label>
                                         </div>
                                     </div>
                                     <div class="col-12">
                                         <div class="form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" id="supports_refund" 
+                                            <input class="form-check-input" type="checkbox" name="supports_refund" id="supports_refund" value="1"
                                                    {{ $gateway->supports_refund ? 'checked' : '' }}>
                                             <label class="form-check-label fw-semibold" for="supports_refund">Suporta Reembolso</label>
                                         </div>
@@ -419,45 +427,28 @@ $(document).ready(function() {
         const originalText = btn.html();
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-2"></i>Salvando...');
         
-        const formData = new FormData(this);
-        const data = {};
-        
-        // Converte FormData para objeto
-        for (let [key, value] of formData.entries()) {
-            if (key.startsWith('settings[')) {
-                if (!data.settings) data.settings = {};
-                const settingKey = key.match(/settings\[([^\]]+)\]/)[1];
-                data.settings[settingKey] = value;
-            } else {
-                data[key] = value;
-            }
-        }
-        
-        // Converte checkboxes
-        data.active = $('#active').is(':checked');
-        data.test_mode = $('#test_mode').is(':checked');
-        data.supports_recurring = $('#supports_recurring').is(':checked');
-        data.supports_refund = $('#supports_refund').is(':checked');
-        
-        if (!data.settings) data.settings = {};
-        data.settings.pass_fee = $('#pass_fee').is(':checked');
-        data.settings.late_fee_enabled = $('#late_fee_enabled').is(':checked');
+        // Serializa o formulário
+        const formData = $(this).serialize();
         
         $.ajax({
             url: '{{ route("admin.gateways.configure.save", $gateway) }}',
             method: 'PUT',
-            data: data,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            data: formData,
             success: function(response) {
                 toastr.success(response.message);
             },
             error: function(xhr) {
+                console.log('Erro:', xhr.responseText);
                 const errors = xhr.responseJSON?.errors;
                 if (errors) {
                     Object.values(errors).forEach(error => {
                         toastr.error(error[0]);
                     });
                 } else {
-                    toastr.error('Erro ao salvar configurações');
+                    toastr.error('Erro ao salvar configurações: ' + (xhr.responseJSON?.message || 'Erro desconhecido'));
                 }
             },
             complete: function() {
@@ -483,7 +474,26 @@ $(document).ready(function() {
                     toastr.warning(response.message);
                 }
             },
-                    toastr.success(response.message);
+            error: function(xhr) {
+                toastr.error('Erro ao testar gateway');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html(originalText);
+            }
+        });
+    });
+
+    // Copiar URL do webhook
+    window.copyWebhookUrl = function() {
+        const input = document.getElementById('webhookUrl');
+        input.select();
+        document.execCommand('copy');
+        toastr.success('URL copiada para a área de transferência!');
+    };
+});
+</script>
+@endpush
+@endsection
                 } else {
                     toastr.warning(response.message);
                 }

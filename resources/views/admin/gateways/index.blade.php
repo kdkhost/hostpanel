@@ -114,7 +114,15 @@
                                     <!-- Configuração Status -->
                                     @php
                                         $settings = $gateway->getSettingsDecryptedAttribute();
-                                        $isConfigured = $this->isGatewayConfigured($gateway->driver, $settings);
+                                        $isConfigured = match($gateway->driver) {
+                                            'paghiper' => !empty($settings['api_key']) && !empty($settings['token']),
+                                            'mercadopago' => !empty($settings['access_token']),
+                                            'efirpro' => !empty($settings['client_id']) && !empty($settings['client_secret']) && !empty($settings['pix_key']),
+                                            'bancointer' => !empty($settings['client_id']) && !empty($settings['client_secret']) && !empty($settings['pix_key']),
+                                            'bancobrasil' => !empty($settings['client_id']) && !empty($settings['client_secret']) && !empty($settings['pix_key']),
+                                            'pagbank' => !empty($settings['token']),
+                                            default => true
+                                        };
                                     @endphp
                                     
                                     <div class="alert {{ $isConfigured ? 'alert-success' : 'alert-warning' }} py-2 mb-3">
@@ -339,24 +347,3 @@ function showLogs(gatewayId) {
 </script>
 @endpush
 @endsection
-
-@php
-function isGatewayConfigured($driver, $settings) {
-    switch ($driver) {
-        case 'paghiper':
-            return !empty($settings['api_key']) && !empty($settings['token']);
-        case 'mercadopago':
-            return !empty($settings['access_token']);
-        case 'efirpro':
-            return !empty($settings['client_id']) && !empty($settings['client_secret']) && !empty($settings['pix_key']);
-        case 'bancointer':
-            return !empty($settings['client_id']) && !empty($settings['client_secret']) && !empty($settings['pix_key']);
-        case 'bancobrasil':
-            return !empty($settings['client_id']) && !empty($settings['client_secret']) && !empty($settings['pix_key']);
-        case 'pagbank':
-            return !empty($settings['token']);
-        default:
-            return true;
-    }
-}
-@endphp
